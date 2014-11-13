@@ -1,0 +1,131 @@
+# Format of SMARTS/SMILES file
+# Each line contains tab-separated fields
+
+# first field: SMARTS/SMILES query
+
+# second field: fragment name. If several fragments have identical name they will be combined.
+# This is useful if fragments cannot be represented by a single query or this is quite complicated.
+# E.g. azide can be represented by [NX2]=[NX2+]=[NX1-] and [NX2-]-[NX2+]#[NX1].
+
+# third field (optional): comma separated list of atoms (their atomic numbers) which will be
+# recursively added to the query. Particularly useful if the position of substituents is not important
+# and hydrogen atoms were not explicitly given in the query and they should be added automatically
+# (e.g. aminophenyl vs. 4-aminophenyl, 3-aminophenyl, etc).
+
+
+# Oxygen containing fragments
+
+[$([OH1][CX4])][H]	OH (aliphatic)
+[$([OH1]a)][H]	OH (aromatic)
+c1ccccc1O[H]	phenol
+c1ccccc1[OH0;!R]	phenoxy
+C(=O)O[H]	COOH
+[$(C(a)(=O)O[H])](=O)O[H]	COOH (aromatic)
+[$(C(C)(=O)O[H])](=O)O[H]	COOH (aliphatic)
+[$(C([#6])(=O)OC)](=O)O	COO (ester)
+[$([CX3]([#6])([#6])=[OX1])]=[OX1]	CO (ketone)
+[$([CX3H1]([#6])=[OX1])](=[OX1])[H]	CHO (aldehyde)
+[$([OX2]([CH3])[CX4])]C([H])([H])[H]	CH3O (aliphatic)
+[$([OX2]([CH3])a)]C([H])([H])[H]	CH3O (aromatic)
+
+
+# Nitrogen containing fragments
+
+[$([NH2X3][CX4,a])]([H])[H]	NH2
+[$([NH2X3][CX4])]([H])[H]	NH2 (aliphatic)
+[$([NH2X3]a)]([H])[H]	NH2 (aromatic)
+[$([NX3]([CH3])([CH3])[a,C;!$(C=O)])](C([H])([H])[H])C([H])([H])[H]	N(CH3)2 (not amide)
+[$([NX3]([CH3])([CH3])a)](C([H])([H])[H])C([H])([H])[H]	N(CH3)2 (aromatic)
+[$([NX3]([CH3])([CH3])[C;!$(C=O)])](C([H])([H])[H])C([H])([H])[H]	N(CH3)2 (aliphatic)
+[CX4]#[NX3]	CN
+[NX2]=[NX2+]=[NX1-]	N3 (azide)
+[NX2-]-[NX2+]#[NX1]	N3 (azide)
+[$([NX2](a)(=[NX2]a))]=[NX2]	N=N (aromatic azo)
+[$([NHX3]([!$(C=O)])[NH2X3])]([H])N([H])[H]	NHNH2 (not hydrazide)
+[$([NH0X4]([CH3])([CH3])([CH3])[!H])](C([H])([H])[H])(C([H])([H])[H])C([H])([H])[H]	N(CH3)3+
+[NH0X4+]	NH0X4+
+
+
+# Oxygen and nitrogen containing fragments
+
+[CX3](=[OX1])N([H])[H]	CONH2
+[$([C;!R]([#6])(=O)[NH;!R][#6;!$(C=O)])](=O)[N;!R][H]	CONH (acyclic)
+[$([C;R]([#6])(=O)[NH;R][#6;!$(C=O)])](=O)[N;R][H]	CONH (cyclic)
+[$([#7X3](~[#8X1])([!#8])(~[#8X1]))](~[#8X1])(~[#8X1])	NO2
+[$([#7X3](~[#8X1])(a)(~[#8X1]))](~[#8X1])(~[#8X1])	NO2 (aromatic)
+[$([#7X3](~[#8X1])(C)(~[#8X1]))](~[#8X1])(~[#8X1])	NO2 (aliphatic)
+[$([#7X2](a)=[OX1])]=[OX1]	N=O (aromatic nitroso)
+[$([#7X2](C)=[OX1])]=[OX1]	N=O (aliphatic nitroso)
+[$([#7X2](-O-C)=O)](-O)=O	O-N=O (aliphatic nitrite)
+[$([#7X2](-N)=O)]=O	nitrosamine
+[$([NH]([OH])a)]([H])O[H]	NHOH (aromatic)
+
+
+# Aromatic hydrocarbons
+
+c1ccccc1	benzene	1
+c1c([H])c([H])c([H])c([H])c1([H])	phenyl
+[cH]1[cH]ccc2c1c3c(cc2)cc[cH][cH]3	bay region polycyclic aryl	1
+[cH]1cccc2c1[cH][cH]c3c2ccc[cH]3	K region polycyclic aryl	1
+
+
+# Heteroaromatic fragments (3-membered)
+
+[#8]1~[#6]~[#6]1	epoxyde	1
+[#7]1~[#6]~[#6]1	aziridine	1
+
+
+# Heteroaromatic fragments (5-membered)
+
+o1cccc1	furan	1
+n1cccc1	pyrrole	1
+s1cccc1	thiophen	1
+n1cncc1	diazole13	1
+s1cncc1	thiazole13	1
+n1cncn1	triazole124	1
+n1cnnn1	tetrazole	1
+o1cncc1	oxazole13	1
+
+
+# Heteroaromatic fragments (6-membered)
+
+n1ccccc1	pyridine	1
+n1cnccc1	pyrimidine	1
+
+
+# Heterocyclic fragments
+
+N1CCOCC1	morpholine	1
+N1CCNCC1	piperazine	1
+N1CCCCC1	piperidine	1
+O1CCOCC1	dioxane14	1
+
+
+# Halogen containing fragments
+
+C(F)(F)F	CF3
+[$(F[CX4])]	F (aliphatic)
+[$(Fa)]	F (aromatic)
+[$(Cl[CX4])]	Cl (aliphatic)
+[$(Cla)]	Cl (aromatic)
+[$(Br[CX4])]	Br (aliphatic)
+[$(Bra)]	Br (aromatic)
+[$(I[CX4])]	I (aliphatic)
+[$(Ia)]	I (aromatic)
+[$([F,Cl,Br,I][CX4])]	Hal (aliphatic)
+[$([F,Cl,Br,I]a)]	Hal (aromatic)
+[F,Cl,Br,I]C=O	COHal (acid halide)
+
+
+# Sulfur containing fragments
+
+[SX4](=[OX1])(=[OX1])[OH][H]	SO3H
+[$([SX4](a)(=[OX1])(=[OX1])[OH])](=[OX1])(=[OX1])[OH][H]	SO3H (aromatic)
+[$([SX4](C)(=[OX1])(=[OX1])[OH])](=[OX1])(=[OX1])[OH][H]	SO3H (aliphatic)
+[$([SX4]([C,a])(=[OX1])(=[OX1])[NH2])](=[OX1])(=[OX1])[NH2]([H])[H]	SO2NH2
+[$([SX4](a)(=[OX1])(=[OX1])[NH2])](=[OX1])(=[OX1])[NH2]([H])[H]	SO2NH2 (aromatic)
+[$([SX4](C)(=[OX1])(=[OX1])[NH2])](=[OX1])(=[OX1])[NH2]([H])[H]	SO2NH2 (aliphatic)
+[$([SX4]([C,a])(=[OX1])(=[OX1])[NH][#6])](=[OX1])(=[OX1])[NH][H]	SO2NH
+[$([SX3]([#6])([#6])=[OX1])]=[OX1]	S=O
+[$([SX3]([#6])([#6])(=[OX1])=[OX1])](=[OX1])=[OX1]	SO2
+
