@@ -3,7 +3,7 @@
 # author          : Pavel Polishchuk
 # date            : 01-11-2014
 # version         : 0.1
-# python_version  : 3
+# python_version  : 3.2
 # copyright       : Pavel Polishchuk 2014
 # license         : GPL3
 #==============================================================================
