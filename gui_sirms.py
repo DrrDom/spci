@@ -9,6 +9,7 @@
 #==============================================================================
 
 import os
+from runpy import run_path
 import sys
 import ast
 import shutil
@@ -18,6 +19,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import font as tkfont
 from multiprocessing import cpu_count
+from subprocess import call
 import sdf_field2title
 import calc_atomic_properties_chemaxon
 import model
@@ -228,14 +230,31 @@ class Tab_1(ttk.Frame):
         # process mol title
         if self.compound_names.get() == 'title':
             tmp_sdf = None
-        elif self.compound_names.get() == 'gen':
-            tmp_sdf = self.sdf_path.get() + '.tmp'
-            sdf_field2title.main_params(self.sdf_path.get(), None, tmp_sdf)
-        elif self.compound_names.get() == 'field':
-            tmp_sdf = self.sdf_path.get() + '.tmp'
-            sdf_field2title.main_params(self.sdf_path.get(), self.sdf_id_field_name.get().strip(), tmp_sdf)
+        else:
+            tmp_sdf = self.sdf_path.get() + '.tmp.sdf'
+            if self.compound_names.get() == 'gen':
+                sdf_field2title.main_params(self.sdf_path.get(), None, tmp_sdf)
+            elif self.compound_names.get() == 'field':
+                sdf_field2title.main_params(self.sdf_path.get(), self.sdf_id_field_name.get().strip(), tmp_sdf)
 
         input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
+
+        # standardize
+        # copy xml-rules if the file is absent in the sdf folder
+        shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
+                        os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
+        # run standardize
+        std_sdf_tmp = input_sdf + '.std.sdf'
+        run_params = ['standardize',
+                      '-c',
+                      os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'),
+                      input_sdf,
+                      '-f',
+                      'sdf',
+                      '-o',
+                      std_sdf_tmp]
+        call(run_params, shell=True)
+        input_sdf = std_sdf_tmp
 
         # extract property and save to separate file
         if self.property_field_name.get() != '':
@@ -249,7 +268,7 @@ class Tab_1(ttk.Frame):
 
         # calc atomic properties with Chemaxon
         # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
-        output_sdf = self.sdf_path.get().rsplit(".")[0] + '_lbl.sdf'
+        output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
         calc_atomic_properties_chemaxon.main_params(input_sdf,
                                                     output_sdf,
                                                     ['charge', 'logp', 'acc', 'don', 'refractivity'],
@@ -258,6 +277,7 @@ class Tab_1(ttk.Frame):
 
         if tmp_sdf is not None:
             os.remove(tmp_sdf)
+        os.remove(std_sdf_tmp)
 
         # copy setup.txt to folder with sdf file
         shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
@@ -388,7 +408,7 @@ class Tab_2(ttk.Frame):
 
     def __calc_contributions(self):
 
-        sdf_fname = self.master.children['tab_1'].sdf_path.get()[:-4] + '_lbl.sdf'
+        sdf_fname = self.master.children['tab_1'].sdf_path.get()[:-4] + '_std_lbl.sdf'
 
         wd = os.path.realpath(os.path.dirname(sdf_fname))
 

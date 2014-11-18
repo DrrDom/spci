@@ -104,7 +104,7 @@ def main():
     parser.add_argument('-H', '--pH', metavar='pH_value', default=None,
                         help='pH value which will be used during calculation of atomic properties')
     parser.add_argument('-c', '--cxcalc_path', metavar='path-to-cxcalc.bat',
-                        default="c:\\Program Files (x86)\\ChemAxon\\JChem\\bin\\cxcalc",
+                        default="cxcalc",
                         help='path to cxcalc executable file. It is usually '
                              'c:\\Program Files (x86)\\ChemAxon\\JChem\\bin\\cxcalc on Windows')
 
