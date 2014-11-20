@@ -146,10 +146,12 @@ class StatWindow(tk.Toplevel):
 
 class ModelsFrame(ttk.Labelframe):
 
-    def __init__(self, parent, name, column, row):
+    def __init__(self, parent, name, column, row, full_version=True):
 
         ttk.Labelframe.__init__(self, parent, text=name)
         self.grid(column=column, row=row, columnspan=10, sticky=(tk.W, tk.E), padx=5, pady=5)
+
+        self._full_version = full_version
 
         self.model_type = tk.StringVar(value='reg')
 
@@ -164,18 +166,24 @@ class ModelsFrame(ttk.Labelframe):
         self.model_gbm_class = tk.BooleanVar(value=True)
         self.model_knn_class = tk.BooleanVar(value=False)
 
-        ttk.Radiobutton(self, text='Regression', name='model_type_reg', value='reg', variable=self.model_type).grid(column=0, row=0, sticky=(tk.W), padx=5, pady=5)
-        ttk.Checkbutton(self, variable=self.model_rf, name='chk_rf', text='Random Forest (RF)', command=self.reg_model_checked).grid(column=0, row=1, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-        ttk.Checkbutton(self, variable=self.model_svm, name='chk_svr', text='Support vector regression (SVR)', command=self.reg_model_checked).grid(column=0, row=2, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-        ttk.Checkbutton(self, variable=self.model_gbm, name='chk_gbm', text='Gradient boosting regression (GBR)', command=self.reg_model_checked).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-        ttk.Checkbutton(self, variable=self.model_pls, name='chk_pls', text='Partial least squares (PLS)', command=self.reg_model_checked).grid(column=0, row=4, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-        ttk.Checkbutton(self, variable=self.model_knn, name='chk_knn', text='k-Nearest neighbors (kNN)', command=self.reg_model_checked).grid(column=0, row=5, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+        ttk.Radiobutton(self, text='Regression (RF, GBM, SVM, PLS)', name='model_type_reg', value='reg', variable=self.model_type).grid(column=0, row=0, sticky=(tk.W), padx=5, pady=5)
 
-        ttk.Radiobutton(self, text='Classification (only binary, 0-1)', name='model_type_class', value='class', variable=self.model_type).grid(column=1, row=0, sticky=(tk.W), padx=5, pady=5)
-        ttk.Checkbutton(self, variable=self.model_rf_class, name='chk_rf_class', text='Random Forest (RF)', command=self.class_model_checked).grid(column=1, row=1, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-        ttk.Checkbutton(self, variable=self.model_svm_class, name='chk_svr_class', text='Support vector classification (SVC)', command=self.class_model_checked).grid(column=1, row=2, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-        ttk.Checkbutton(self, variable=self.model_gbm_class, name='chk_gbm_class', text='Gradient boosting classification (GBC)', command=self.class_model_checked).grid(column=1, row=3, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-        ttk.Checkbutton(self, variable=self.model_knn_class, name='chk_knn_class', text='k-Nearest neighbors (kNN)', command=self.class_model_checked).grid(column=1, row=4, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+        if self._full_version:
+
+            ttk.Checkbutton(self, variable=self.model_rf, name='chk_rf', text='Random Forest (RF)', command=self.reg_model_checked).grid(column=0, row=1, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+            ttk.Checkbutton(self, variable=self.model_svm, name='chk_svr', text='Support vector regression (SVR)', command=self.reg_model_checked).grid(column=0, row=2, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+            ttk.Checkbutton(self, variable=self.model_gbm, name='chk_gbm', text='Gradient boosting regression (GBR)', command=self.reg_model_checked).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+            ttk.Checkbutton(self, variable=self.model_pls, name='chk_pls', text='Partial least squares (PLS)', command=self.reg_model_checked).grid(column=0, row=4, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+            ttk.Checkbutton(self, variable=self.model_knn, name='chk_knn', text='k-Nearest neighbors (kNN)', command=self.reg_model_checked).grid(column=0, row=5, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+
+            ttk.Radiobutton(self, text='Binary classification (0-1) (RF, GBM, SVM)', name='model_type_class', value='class', variable=self.model_type).grid(column=1, row=0, sticky=(tk.W), padx=5, pady=5)
+            ttk.Checkbutton(self, variable=self.model_rf_class, name='chk_rf_class', text='Random Forest (RF)', command=self.class_model_checked).grid(column=1, row=1, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+            ttk.Checkbutton(self, variable=self.model_svm_class, name='chk_svr_class', text='Support vector classification (SVC)', command=self.class_model_checked).grid(column=1, row=2, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+            ttk.Checkbutton(self, variable=self.model_gbm_class, name='chk_gbm_class', text='Gradient boosting classification (GBC)', command=self.class_model_checked).grid(column=1, row=3, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+            ttk.Checkbutton(self, variable=self.model_knn_class, name='chk_knn_class', text='k-Nearest neighbors (kNN)', command=self.class_model_checked).grid(column=1, row=4, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+
+        else:
+            ttk.Radiobutton(self, text='Binary classification (0-1) (RF, GBM, SVM)', name='model_type_class', value='class', variable=self.model_type).grid(column=0, row=1, sticky=(tk.W), padx=5, pady=5)
 
         self.columnconfigure(0, pad=80)
 
@@ -191,16 +199,22 @@ class ModelsFrame(ttk.Labelframe):
 
         output = []
         if self.model_type.get() == 'reg':
-            if self.model_gbm.get(): output.append('gbm')
-            if self.model_rf.get(): output.append('rf')
-            if self.model_svm.get(): output.append('svm')
-            if self.model_pls.get(): output.append('pls')
-            if self.model_knn.get(): output.append('knn')
+            if self._full_version:
+                if self.model_gbm.get(): output.append('gbm')
+                if self.model_rf.get(): output.append('rf')
+                if self.model_svm.get(): output.append('svm')
+                if self.model_pls.get(): output.append('pls')
+                if self.model_knn.get(): output.append('knn')
+            else:
+                output = ['gbm', 'rf', 'svm', 'pls']
         if self.model_type.get() == 'class':
-            if self.model_gbm_class.get(): output.append('gbm')
-            if self.model_rf_class.get(): output.append('rf')
-            if self.model_svm_class.get(): output.append('svm')
-            if self.model_knn_class.get(): output.append('knn')
+            if self._full_version:
+                if self.model_gbm_class.get(): output.append('gbm')
+                if self.model_rf_class.get(): output.append('rf')
+                if self.model_svm_class.get(): output.append('svm')
+                if self.model_knn_class.get(): output.append('knn')
+            else:
+                output = ['gbm', 'rf', 'svm']
 
         return output
 
@@ -297,6 +311,10 @@ class Tab_1(ttk.Frame):
                           opt_noH=True,
                           frag_fname=None)
 
+        # remove models dir
+        if os.path.isdir(os.path.join(os.path.dirname(x_fname), "models")):
+            shutil.rmtree(os.path.join(os.path.dirname(x_fname), "models"))
+
         # build models
         model.main_params(x_fname=x_fname,
                           y_fname=self.property_file_path.get(),
@@ -304,6 +322,9 @@ class Tab_1(ttk.Frame):
                           ncores=cpu_count() - 1,
                           model_type=self.models_frame.model_type.get(),
                           verbose=1)
+
+        # update list of models to plot
+        self.master.children['tab_3']._show_models_list()
 
     def __show_models_stat(self):
         win = StatWindow(self)
@@ -316,6 +337,8 @@ class Tab_1(ttk.Frame):
             self.children['sdf_label_frame'].children['property_field_name'].set(value=field_names[0])
             self.children['optional_label_frame'].children['inner_frame'].children['sdf_id_field_name'].configure(values=field_names)
             self.children['optional_label_frame'].children['inner_frame'].children['sdf_id_field_name'].set(value=field_names[0])
+        # update list of models to plot
+        self.master.children['tab_3']._show_models_list()
 
     def __read_sdf_field_names(self, fname):
         field_names = []
@@ -379,7 +402,7 @@ class Tab_1(ttk.Frame):
         ttk.Entry(frame, width=70, textvariable=self.property_file_path).grid(column=0, row=7, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
         ttk.Button(frame, text='Browse...', command=self.__select_property_file_path).grid(column=1, row=7, sticky=(tk.W), padx=5, pady=(0, 5))
 
-        self.models_frame = ModelsFrame(self, 'Models', 0, 10)
+        self.models_frame = ModelsFrame(self, 'Models', 0, 10, False)
 
         buttons_frame = ttk.Frame(self)
         buttons_frame.grid(column=0, row=20, columnspan=3, sticky=(tk.W, tk.E))
@@ -512,6 +535,20 @@ class Tab_2(ttk.Frame):
 
 class Tab_3(ttk.Frame):
 
+    def _show_models_list(self):
+
+        model_names = self._get_model_list()
+
+        if model_names is not None:
+
+            model_frame = ttk.Labelframe(self, name='model_frame', text='Select models to visualise')
+            model_frame.grid(column=1, row=0, sticky=(tk.EW, tk.N), padx=5, pady=5)
+
+            self._models_chkbox = dict()
+            for i, m in enumerate(model_names):
+                self._models_chkbox[m] = tk.BooleanVar(value=True)
+                ttk.Checkbutton(model_frame, name='chk_' + m, variable=self._models_chkbox[m], text=m.upper()).grid(column=0, row=i, sticky=(tk.W), padx=5, pady=(3, 1))
+
     def __run_plot(self, event):
         self.__plot_contributions()
 
@@ -528,6 +565,19 @@ class Tab_3(ttk.Frame):
         if self.contr_hb.get(): output.append('hb')
         if self.contr_ref.get(): output.append('refractivity')
         return output
+
+    def _get_selected_models(self):
+        output = [k for k, v, in self._models_chkbox.items() if v.get()]
+        return output
+
+    def _get_model_list(self):
+        if self.master.children['tab_1'].sdf_path.get() != '':
+            models_dir = os.path.join(os.path.dirname(self.master.children['tab_1'].sdf_path.get()), "models")
+            files = [f[:-4] for f in os.listdir(models_dir) if f.endswith('.pkl')]
+            files.remove('scale')
+            return files
+        else:
+            return None
 
     def __plot_contributions(self):
 
@@ -551,7 +601,8 @@ class Tab_3(ttk.Frame):
         wd = os.path.dirname(self.master.children['tab_1'].sdf_path.get())
         contr_fname = os.path.join(wd, self.master.children['tab_2'].frags_choice.get() + '_frag_contributions.txt')
 
-        models = self.master.children['tab_1'].models_frame.get_selected_models()
+        # models = self.master.children['tab_1'].models_frame.get_selected_models()
+        models = self._get_selected_models()
 
         plot_contributions.main_params(contr_fname=contr_fname,
                                        contr_names=self.__get_selected_contributions(),
@@ -574,7 +625,7 @@ class Tab_3(ttk.Frame):
         self.contr_ref = tk.BooleanVar(value=False)
 
         frame = ttk.Labelframe(self, text='Select contribution types to visualise')
-        frame.grid(column=0, row=0, sticky=tk.EW, padx=5, pady=5)
+        frame.grid(column=0, row=0, sticky=(tk.EW, tk.N), padx=5, pady=5)
 
         ttk.Checkbutton(frame, variable=self.contr_overall, text='overall').grid(column=0, row=0, sticky=(tk.W), padx=5, pady=(3, 1))
         ttk.Checkbutton(frame, variable=self.contr_charge, text='electrostatic (charge)').grid(column=0, row=1, sticky=(tk.W), padx=5, pady=(0, 1))
@@ -583,7 +634,7 @@ class Tab_3(ttk.Frame):
         ttk.Checkbutton(frame, variable=self.contr_ref, text='dispersive (refractivity)').grid(column=0, row=4, sticky=(tk.W), padx=5, pady=(0, 1))
 
         output_frame = ttk.Labelframe(self, text='Output options')
-        output_frame.grid(column=0, row=5, sticky=(tk.W, tk.E), padx=5, pady=5)
+        output_frame.grid(column=0, row=5, columnspan=2, sticky=(tk.W, tk.E), padx=5, pady=5)
 
         self.filter_n = tk.StringVar(value='10')
         self.filter_m = tk.StringVar(value='10')
@@ -604,7 +655,7 @@ class Tab_3(ttk.Frame):
         self.__save_fig_file_path.grid(column=0, row=4, sticky=(tk.W, tk.E), padx=5, pady=(0, 1))
         ttk.Button(output_frame, text='Browse...', command=self.__select_save_file_path).grid(column=1, row=4, sticky=(tk.W), padx=5, pady=(0, 1))
 
-        ttk.Button(self, text='Plot contributions', command=self.__plot_contributions).grid(column=0, row=10, padx=5, pady=5)
+        ttk.Button(self, text='Plot contributions', command=self.__plot_contributions).grid(column=0, row=10, columnspan=2, padx=5, pady=5)
 
         # events
         self.__save_fig_file_path.bind('<Return>', self.__run_plot)
