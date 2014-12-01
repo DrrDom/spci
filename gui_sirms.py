@@ -29,7 +29,7 @@ import plot_contributions
 import extractsdf
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
-sys.path.insert(1, os.path.join(sys.path[0], '/sirms'))
+sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
 sys.path.insert(1, os.path.join(sys.path[0], '../github_sirms'))
 import sirms
 
@@ -573,9 +573,12 @@ class Tab_3(ttk.Frame):
     def _get_model_list(self):
         if self.master.children['tab_1'].sdf_path.get() != '':
             models_dir = os.path.join(os.path.dirname(self.master.children['tab_1'].sdf_path.get()), "models")
-            files = [f[:-4] for f in os.listdir(models_dir) if f.endswith('.pkl')]
-            files.remove('scale')
-            return files
+            if os.path.isdir(models_dir):
+                files = [f[:-4] for f in os.listdir(models_dir) if f.endswith('.pkl')]
+                files.remove('scale')
+                return files
+            else:
+                return None
         else:
             return None
 
