@@ -277,7 +277,8 @@ class Tab_1(ttk.Frame):
             extractsdf.main_params(in_fname=input_sdf,
                                    out_fname=property_filename,
                                    title=True,
-                                   field_names=[self.property_field_name.get().strip()])
+                                   field_names=[self.property_field_name.get().strip()],
+                                   all_fields=False)
             self.property_file_path.set(property_filename)
 
         # calc atomic properties with Chemaxon
