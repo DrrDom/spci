@@ -320,7 +320,7 @@ class Tab_1(ttk.Frame):
         model.main_params(x_fname=x_fname,
                           y_fname=self.property_file_path.get(),
                           model_names=self.models_frame.get_selected_models(),
-                          ncores=cpu_count() - 1,
+                          ncores=max(1, cpu_count() - 1),
                           model_type=self.models_frame.model_type.get(),
                           verbose=1)
 
