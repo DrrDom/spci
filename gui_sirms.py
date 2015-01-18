@@ -452,7 +452,8 @@ class Tab_2(ttk.Frame):
                                out_txt=ids_fname,
                                in_frags=frag_fname,
                                remove_all=False,
-                               verbose=True)
+                               verbose=True,
+                               error_mol=True)
 
         # calc sirms descriptors
         x_fname = os.path.join(os.path.dirname(sdf_fname), self.frags_choice.get() + '_frag_x.txt')

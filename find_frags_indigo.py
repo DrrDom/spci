@@ -8,9 +8,10 @@
 # license         : GPL3
 #==============================================================================
 
+import os
 import sys
 import argparse
-from indigo import Indigo
+from indigo import Indigo, IndigoException
 
 
 indigo = Indigo()
@@ -124,7 +125,12 @@ def get_map_atom_ids_list(mol, query, attached_atoms):
     return output
 
 
-def main_params(in_sdf, out_txt, in_frags, remove_all, verbose):
+def main_params(in_sdf, out_txt, in_frags, remove_all, verbose, error_mol):
+
+    if error_mol:
+        error_log_file = os.path.join(os.path.dirname(out_txt), 'indigo_errors.log')
+        if os.path.isfile(error_log_file):
+            os.remove(error_log_file)
 
     frags = load_query_fragments(in_frags)
 
@@ -140,23 +146,33 @@ def main_params(in_sdf, out_txt, in_frags, remove_all, verbose):
 
         for mol in indigo.iterateSDFile(in_sdf):
 
-            mol.dearomatize()  # important for substructure search!
-            mol_name = mol.name()
-            if verbose:
-                print("Searching for fragments in", mol_name)
+            try:
 
-            for frag in frags:
-                ids = get_map_atom_ids_list(mol, frag["query"], frag.get("attached_atoms"))
-                if ids:
-                    if remove_all:
-                        tmp = set()
-                        for v in ids:
-                            tmp.update(v)
-                        f.write(mol_name + "\t" + frag["name"] + "\t" + "\t".join(map(str, tuple(tmp))) + "\n")
-                    else:
-                        for v in ids:
-                            f.write(mol_name + "\t" + frag["name"] + "\t" + "\t".join(map(str, v)) + "\n")
+                mol.dearomatize()  # important for substructure search!
+                mol_name = mol.name()
+                if verbose:
+                    print("Searching for fragments in", mol_name)
 
+                for frag in frags:
+                    ids = get_map_atom_ids_list(mol, frag["query"], frag.get("attached_atoms"))
+                    if ids:
+                        if remove_all:
+                            tmp = set()
+                            for v in ids:
+                                tmp.update(v)
+                            f.write(mol_name + "\t" + frag["name"] + "\t" + "\t".join(map(str, tuple(tmp))) + "\n")
+                        else:
+                            for v in ids:
+                                f.write(mol_name + "\t" + frag["name"] + "\t" + "\t".join(map(str, v)) + "\n")
+
+            except IndigoException as e:
+
+                print('%s was skipped due to error' % mol.name())
+                print(e)
+
+                if error_mol:
+                    with open(error_log_file, 'at') as f_err:
+                        f_err.write('%s\t%s\n' % (mol.name(), e))
 
 def main():
 
@@ -176,6 +192,8 @@ def main():
                              'in a molecule will be removed simultaneously.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='show progress on the screen.')
+    parser.add_argument('-e', '--error_mol', action='store_true', default=True,
+                        help='save molecules which cause error to a text log file named indigo_errors.log.')
     # parser.add_argument('-d', '--allow_duplicate_fragments', action='store_true', default=False,
     #                     help='pre-filtering of duplicate fragments. Default: false (duplicate fragments not allowed).')
 
@@ -186,9 +204,10 @@ def main():
         if o == "frag": in_frags = v
         if o == "all": remove_all = v
         if o == "verbose": verbose = v
+        if o == "error_mol": error_mol = v
         # if o == "allow_duplicate_fragments": dupl = v
 
-    main_params(in_sdf, out_txt, in_frags, remove_all, verbose)
+    main_params(in_sdf, out_txt, in_frags, remove_all, verbose, error_mol)
 
 
 if __name__ == '__main__':
