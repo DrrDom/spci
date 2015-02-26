@@ -310,7 +310,8 @@ class Tab_1(ttk.Frame):
                           opt_ncores=1,
                           opt_verbose=True,
                           opt_noH=True,
-                          frag_fname=None)
+                          frag_fname=None,
+                          parse_stereo=False)
 
         # remove models dir
         if os.path.isdir(os.path.join(os.path.dirname(x_fname), "models")):
