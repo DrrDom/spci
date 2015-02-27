@@ -548,11 +548,11 @@ class Tab_2(ttk.Frame):
 
         ttk.Radiobutton(frame, text='Default fragments', name='default_frag', value='default', variable=self.frags_choice).\
             grid(column=0, row=0, sticky=tk.W, padx=5, pady=(3, 1))
-        ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice).\
+        ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice, state='disabled').\
             grid(column=0, row=1, sticky=tk.W, padx=5, pady=(0, 1))
-        ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice).\
+        ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice, state='disabled').\
             grid(column=0, row=2, sticky=tk.W, padx=5, pady=(0, 1))
-        ttk.Radiobutton(frame, text='Murcko scaffolds (frameworks)', name='murcko_frag',  value='murcko', variable=self.frags_choice).\
+        ttk.Radiobutton(frame, text='Murcko scaffolds (frameworks)', name='murcko_frag',  value='murcko', variable=self.frags_choice, state='disabled').\
             grid(column=0, row=3, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='User-defined fragments', name='user_frag', value='user', variable=self.frags_choice).\
             grid(column=0, row=4, sticky=tk.W, padx=5, pady=(0, 1))
