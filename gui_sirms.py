@@ -245,30 +245,13 @@ class Tab_1(ttk.Frame):
         if self.compound_names.get() == 'title':
             tmp_sdf = None
         else:
-            tmp_sdf = self.sdf_path.get() + '.tmp.sdf'
+            tmp_sdf = self.sdf_path.get().rsplit('.', 1)[0] + '_titles.sdf'
             if self.compound_names.get() == 'gen':
                 sdf_field2title.main_params(self.sdf_path.get(), None, tmp_sdf)
             elif self.compound_names.get() == 'field':
                 sdf_field2title.main_params(self.sdf_path.get(), self.sdf_id_field_name.get().strip(), tmp_sdf)
 
         input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
-
-        # standardize
-        # copy xml-rules if the file is absent in the sdf folder
-        shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
-                        os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
-        # run standardize
-        std_sdf_tmp = input_sdf + '.std.sdf'
-        run_params = ['standardize',
-                      '-c',
-                      os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'),
-                      input_sdf,
-                      '-f',
-                      'sdf',
-                      '-o',
-                      std_sdf_tmp]
-        call(run_params, shell=True)
-        input_sdf = std_sdf_tmp
 
         # extract property and save to separate file
         if self.property_field_name.get() != '':
@@ -281,29 +264,59 @@ class Tab_1(ttk.Frame):
                                    all_fields=False)
             self.property_file_path.set(property_filename)
 
-        # calc atomic properties with Chemaxon
-        # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
-        output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
-        calc_atomic_properties_chemaxon.main_params(input_sdf,
-                                                    output_sdf,
-                                                    ['charge', 'logp', 'acc', 'don', 'refractivity'],
-                                                    None,
-                                                    os.path.join(self.chemaxon_dir.get(), 'cxcalc'))
+        # standardization and property labeling
+        if self.chemaxon_usage.get() == 'with_chemaxon':
 
-        if tmp_sdf is not None:
-            os.remove(tmp_sdf)
-        os.remove(std_sdf_tmp)
+            # standardize
+            # copy xml-rules if the file is absent in the sdf folder
+            shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
+                            os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
+            # run standardize
+            std_sdf_tmp = input_sdf + '.std.sdf'
+            run_params = ['standardize',
+                          '-c',
+                          os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'),
+                          input_sdf,
+                          '-f',
+                          'sdf',
+                          '-o',
+                          std_sdf_tmp]
+            call(run_params, shell=True)
+
+            # calc atomic properties with Chemaxon
+            # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
+            output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
+            calc_atomic_properties_chemaxon.main_params(std_sdf_tmp,
+                                                        output_sdf,
+                                                        ['charge', 'logp', 'acc', 'don', 'refractivity'],
+                                                        None,
+                                                        os.path.join(self.chemaxon_dir.get(), 'cxcalc'))
+
+            os.remove(std_sdf_tmp)
+            if tmp_sdf is not None:
+                os.remove(tmp_sdf)
+
+        else:
+
+            output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
+            if os.path.isfile(output_sdf):
+                os.remove(output_sdf)
+            os.rename(tmp_sdf, output_sdf)
 
         # copy setup.txt to folder with sdf file
         shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
                         os.path.join(os.path.dirname(self.sdf_path.get()), 'setup.txt'))
 
         # calc sirms descriptors
+        if self.chemaxon_usage.get() == 'with_chemaxon':
+            atom_diff = ['charge', 'logp', 'hb', 'refractivity']
+        else:
+            atom_diff = ['elm']
         x_fname = os.path.join(os.path.dirname(output_sdf), 'x.txt')
         sirms.main_params(in_fname=output_sdf,
                           out_fname=x_fname,
                           opt_no_dict=False,
-                          opt_diff=['charge', 'logp', 'hb', 'refractivity'],
+                          opt_diff=atom_diff,
                           opt_types=list(range(3, 12)),
                           mix_fname=None,
                           opt_mix_ordered=None,
@@ -360,6 +373,21 @@ class Tab_1(ttk.Frame):
 
     def __set_compound_names_choice_event(self, event):
         self.compound_names.set(value='field')
+
+    def __chemaxon_usage_changed(self, varname, elementname, mode):
+        contr_names = ['contr_overall', 'contr_charge', 'contr_logp', 'contr_hb', 'contr_ref']
+        if self.chemaxon_usage.get() == 'with_chemaxon':
+            states = dict(zip(contr_names, ['normal'] * len(contr_names)))
+        else:
+            states = dict(zip(contr_names, ['normal', 'disabled', 'disabled', 'disabled', 'disabled']))
+            # uncheck all except overall
+            self.master.children['tab_3'].contr_charge.set(False)
+            self.master.children['tab_3'].contr_logp.set(False)
+            self.master.children['tab_3'].contr_hb.set(False)
+            self.master.children['tab_3'].contr_ref.set(False)
+
+        for contr_name in contr_names:
+            self.master.children['tab_3'].children['contributions'].children[contr_name].config(state=states[contr_name])
 
     def __init__(self, parent, tab_name):
 
@@ -423,6 +451,7 @@ class Tab_1(ttk.Frame):
         self.columnconfigure(0, weight=1)
 
         self.sdf_path.trace('w', self.__sdf_path_changed)
+        self.chemaxon_usage.trace('w', self.__chemaxon_usage_changed)
 
         parent.add(self, text=tab_name)
 
@@ -462,29 +491,40 @@ class Tab_2(ttk.Frame):
                                error_mol=True)
 
         # calc sirms descriptors
+        if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+            atom_diff = ['charge', 'logp', 'hb', 'refractivity']
+        else:
+            atom_diff = ['elm']
+
         x_fname = os.path.join(os.path.dirname(sdf_fname), self.frags_choice.get() + '_frag_x.txt')
         sirms.main_params(in_fname=sdf_fname,
                           out_fname=x_fname,
                           opt_no_dict=False,
-                          opt_diff=['charge', 'logp', 'hb', 'refractivity'],
+                          opt_diff=atom_diff,
                           opt_types=list(range(3, 12)),
                           mix_fname=None,
                           opt_mix_ordered=None,
                           opt_ncores=1,
                           opt_verbose=True,
                           opt_noH=True,
-                          frag_fname=ids_fname)
+                          frag_fname=ids_fname,
+                          parse_stereo=False)
 
         # calc contributions
         out_fname = os.path.join(os.path.dirname(sdf_fname), self.frags_choice.get() + '_frag_contributions.txt')
         models = self.master.children['tab_1'].models_frame.get_selected_models()
         model_dir = os.path.join(os.path.dirname(sdf_fname), 'models')
 
+        if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+            prop_name = ['overall', 'charge', 'logp', 'hb', 'refractivity']
+        else:
+            prop_name = ['overall']
+
         calc_frag_contrib.main_params(x_fname=x_fname,
                                       out_fname=out_fname,
                                       model_names=models,
                                       model_dir=model_dir,
-                                      prop_names=['overall', 'charge', 'logp', 'hb', 'refractivity'],
+                                      prop_names=prop_name,
                                       model_type=self.master.children['tab_1'].models_frame.model_type.get(),
                                       verbose=True)
 
@@ -507,15 +547,15 @@ class Tab_2(ttk.Frame):
         frame.grid(column=0, row=0, columnspan=3, sticky=(tk.E, tk.W), padx=5, pady=5)
 
         ttk.Radiobutton(frame, text='Default fragments', name='default_frag', value='default', variable=self.frags_choice).\
-            grid(column=0, row=0, sticky=(tk.W), padx=5, pady=(3, 1))
+            grid(column=0, row=0, sticky=tk.W, padx=5, pady=(3, 1))
         ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice).\
-            grid(column=0, row=1, sticky=(tk.W), padx=5, pady=(0, 1))
+            grid(column=0, row=1, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice).\
-            grid(column=0, row=2, sticky=(tk.W), padx=5, pady=(0, 1))
+            grid(column=0, row=2, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='Murcko scaffolds (frameworks)', name='murcko_frag',  value='murcko', variable=self.frags_choice).\
-            grid(column=0, row=3, sticky=(tk.W), padx=5, pady=(0, 1))
+            grid(column=0, row=3, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='User-defined fragments', name='user_frag', value='user', variable=self.frags_choice).\
-            grid(column=0, row=4, sticky=(tk.W), padx=5, pady=(0, 1))
+            grid(column=0, row=4, sticky=tk.W, padx=5, pady=(0, 1))
 
         self.__entry_user_frags_path = ttk.Entry(frame, width=70, textvariable=self.user_frags_path)
         self.__entry_user_frags_path.grid(column=0, row=5, sticky=(tk.W, tk.E), padx=5, pady=(0, 3))
@@ -635,14 +675,21 @@ class Tab_3(ttk.Frame):
         self.contr_hb = tk.BooleanVar(value=False)
         self.contr_ref = tk.BooleanVar(value=False)
 
-        frame = ttk.Labelframe(self, text='Select contribution types to visualise')
+        frame = ttk.Labelframe(self, text='Select contribution types to visualise', name='contributions')
         frame.grid(column=0, row=0, sticky=(tk.EW, tk.N), padx=5, pady=5)
 
-        ttk.Checkbutton(frame, variable=self.contr_overall, text='overall').grid(column=0, row=0, sticky=(tk.W), padx=5, pady=(3, 1))
-        ttk.Checkbutton(frame, variable=self.contr_charge, text='electrostatic (charge)').grid(column=0, row=1, sticky=(tk.W), padx=5, pady=(0, 1))
-        ttk.Checkbutton(frame, variable=self.contr_logp, text='hydrophobic (logp)').grid(column=0, row=2, sticky=(tk.W), padx=5, pady=(0, 1))
-        ttk.Checkbutton(frame, variable=self.contr_hb, text='hydrogen bonding (hb)').grid(column=0, row=3, sticky=(tk.W), padx=5, pady=(0, 1))
-        ttk.Checkbutton(frame, variable=self.contr_ref, text='dispersive (refractivity)').grid(column=0, row=4, sticky=(tk.W), padx=5, pady=(0, 1))
+        # select properties
+        overall_state = True
+        if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+            charge_state, logp_state, hb_state, ref_state = 'normal', 'normal', 'normal', 'normal'
+        else:
+            charge_state, logp_state, hb_state, ref_state = 'disabled', 'disabled', 'disabled', 'disabled'
+
+        ttk.Checkbutton(frame, variable=self.contr_overall, name='contr_overall', text='overall', state=overall_state).grid(column=0, row=0, sticky=(tk.W), padx=5, pady=(3, 1))
+        ttk.Checkbutton(frame, variable=self.contr_charge, name='contr_charge', text='electrostatic (charge)', state=charge_state).grid(column=0, row=1, sticky=(tk.W), padx=5, pady=(0, 1))
+        ttk.Checkbutton(frame, variable=self.contr_logp, name='contr_logp', text='hydrophobic (logp)', state=logp_state).grid(column=0, row=2, sticky=(tk.W), padx=5, pady=(0, 1))
+        ttk.Checkbutton(frame, variable=self.contr_hb, name='contr_hb', text='hydrogen bonding (hb)', state=hb_state).grid(column=0, row=3, sticky=(tk.W), padx=5, pady=(0, 1))
+        ttk.Checkbutton(frame, variable=self.contr_ref, name='contr_ref', text='dispersive (refractivity)', state=ref_state).grid(column=0, row=4, sticky=(tk.W), padx=5, pady=(0, 1))
 
         output_frame = ttk.Labelframe(self, text='Output options')
         output_frame.grid(column=0, row=5, columnspan=2, sticky=(tk.W, tk.E), padx=5, pady=5)
