@@ -17,8 +17,8 @@
 
 [$([OH1][CX4])][H]	OH (aliphatic)
 [$([OH1]a)][H]	OH (aromatic)
-c1ccccc1O[H]	phenol
-c1ccccc1[OH0;!R]	phenoxy
+[cR1]1[cR1][cR1][cR1][cR1][cR1]1O[H]	phenol
+[cR1]1[cR1][cR1][cR1][cR1][cR1]1[OH0;!R]	phenoxy
 C(=O)O[H]	COOH
 [$(C(a)(=O)O[H])](=O)O[H]	COOH (aromatic)
 [$(C(C)(=O)O[H])](=O)O[H]	COOH (aliphatic)
@@ -63,42 +63,41 @@ C(=O)O[H]	COOH
 
 # Aromatic hydrocarbons
 
-c1ccccc1	benzene	1
-c1c([H])c([H])c([H])c([H])c1([H])	phenyl
+c1[cH][cH][cH][cH][cH]1	phenyl unsubst
 [cH]1[cH]ccc2c1c3c(cc2)cc[cH][cH]3	bay region polycyclic aryl	1
 [cH]1cccc2c1[cH][cH]c3c2ccc[cH]3	K region polycyclic aryl	1
 
 
 # Heteroaromatic fragments (3-membered)
 
-[#8]1~[#6]~[#6]1	epoxyde	1
-[#7]1~[#6]~[#6]1	aziridine	1
+[#8R1]1~[#6R1]~[#6R1]1	epoxyde	1
+[#7R1]1~[#6R1]~[#6R1]1	aziridine	1
 
 
 # Heteroaromatic fragments (5-membered)
 
-o1cccc1	furan	1
-n1cccc1	pyrrole	1
-s1cccc1	thiophen	1
-n1cncc1	diazole13	1
-s1cncc1	thiazole13	1
-n1cncn1	triazole124	1
-n1cnnn1	tetrazole	1
-o1cncc1	oxazole13	1
+[oX2R1]1[cX3R1][cX3R1][cX3R1][cX3R1]1	furan	1
+[nX3R1]1[cX3R1][cX3R1][cX3R1][cX3R1]1	pyrrole	1
+[sX2R1]1[cX3R1][cX3R1][cX3R1][cX3R1]1	thiophen	1
+[nX3R1]1[cX3R1][nX2R1][cX3R1][cX3R1]1	diazole13	1
+[sX2R1]1[cX3R1][nX2R1][cX3R1][cX3R1]1	thiazole13	1
+[nR1]1[cX3R1][nR1][cX3R1][nR1]1	triazole124	1
+[nR1]1[cX3R1][nR1][nR1][nR1]1	tetrazole	1
+[oX2R1]1[cX3R1][nX2R1][cX3R1][cX3R1]1	oxazole13	1
 
 
 # Heteroaromatic fragments (6-membered)
 
-n1ccccc1	pyridine	1
-n1cnccc1	pyrimidine	1
+[nX2R1]1[cX3R1][cX3R1][cX3R1][cX3R1][cX3R1]1	pyridine	1
+[nX2R1]1[cX3R1][nX2R1][cX3R1][cX3R1][cX3R1]1	pyrimidine	1
 
 
 # Heterocyclic fragments
 
-N1CCOCC1	morpholine	1
-N1CCNCC1	piperazine	1
-N1CCCCC1	piperidine	1
-O1CCOCC1	dioxane14	1
+[NR1X3]1[CX4R1][CX4R1][OX2R1][CX4R1][CX4R1]1	morpholine	1
+[NR1X3]1[CX4R1][CX4R1][NX3R1][CX4R1][CX4R1]1	piperazine	1
+[NR1X3]1[CX4R1][CX4R1][CX4R1][CX4R1][CX4R1]1	piperidine	1
+[OR1X2]1[CX4R1][CX4R1][OX2R1][CX4R1][CX4R1]1	dioxane14	1
 
 
 # Halogen containing fragments
