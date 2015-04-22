@@ -36,7 +36,7 @@ def load_sirms(fname):
             tmp = line.strip().split("\t")
             case_names.append(tmp[0])
             x.append(tuple(map(float, tmp[1:])))
-    return (descr_names, case_names, np.asarray(x))
+    return descr_names, case_names, np.asarray(x)
 
 
 def load_y(fname):
@@ -46,7 +46,7 @@ def load_y(fname):
         for line in f:
             tmp = line.strip().split('\t')
             d[tmp[0]] = float(tmp[1])
-    return (d)
+    return d
 
 
 def save_object(model, fname):
@@ -69,16 +69,21 @@ def get_specificity(obs, pred, classes=(0, 1)):
     return tn/n
 
 
-def calc_model_stat(model, X, Y, CV, ncores, model_type):
+def get_r2_test(obs, pred, mean_training):
+    return 1 - (sum((obs - pred) ** 2) / sum((obs - mean_training) ** 2))
+
+
+def get_mse(obs, pred):
+    return sum((obs - pred) ** 2) / (len(pred) - 1)
+
+
+def calc_model_stat_2(y, pred, model_type):
 
     if model_type == 'reg':
-        r2 = cv.cross_val_score(model, X, Y, cv=CV, n_jobs=ncores, scoring='r2')
-        mse = cv.cross_val_score(model, X, Y, cv=CV, n_jobs=ncores, scoring='mean_squared_error')
 
-        d = {"r2": mean(r2),
-             "mse": -mean(mse),
-             "time": strftime("%Y-%m-%d %H:%M:%S"),
-             "optimal_params": str(model.get_params())[1:-1]}
+        d = {"r2": get_r2_test(y, pred, mean(y)),
+             "mse": get_mse(y, pred),
+             "time": strftime("%Y-%m-%d %H:%M:%S")}
 
     elif model_type == 'class':
         accuracy = cv.cross_val_score(model, X, Y, cv=CV, n_jobs=ncores, scoring='accuracy')
@@ -94,16 +99,14 @@ def calc_model_stat(model, X, Y, CV, ncores, model_type):
     return d
 
 
-def save_model_stat(model_name, file_name, model, X, Y, CV, ncores, model_type, verbose):
+def save_model_stat_2(model_name, file_name, model_params, y, pred, model_type, verbose):
 
-    if verbose:
-        print('validation...')
-
-    d = calc_model_stat(model, X, Y, CV, ncores, model_type)
+    d = calc_model_stat_2(y, pred, model_type)
 
     if os.path.isfile(file_name):
         lines = open(file_name).readlines()
         lines = lines[0:2] + [line for line in lines[2:] if line.strip().split('\t')[1] != model_name]
+
     else:
         if model_type == 'reg':
             lines = ["Regression\n", "Time\tModel\tR2\tMSE\tOptimal_parameters\n"]
@@ -112,17 +115,20 @@ def save_model_stat(model_name, file_name, model, X, Y, CV, ncores, model_type, 
 
     if model_type == 'reg':
         lines.append(str(d["time"]) + "\t" + model_name + "\t" + "{0:.2f}".format(d["r2"]) + "\t" +
-             "{0:.2f}".format(d["mse"]) + "\t" + str(d["optimal_params"]) + "\n")
+             "{0:.2f}".format(d["mse"]) + "\t" + model_params + "\n")
 
     elif model_type == 'class':
         lines.append(str(d["time"]) + "\t" + model_name + "\t" + "{0:.2f}".format(d["accuracy"]) + "\t" +
                      "{0:.2f}".format(d["sensitivity"]) + "\t" + "{0:.2f}".format(d["specificity"]) + "\t" +
-                     str(d["optimal_params"]) + "\n")
+                     model_params + "\n")
+
+    if verbose:
+        print(lines[-1])
 
     open(file_name, "wt").writelines(lines)
 
 
-def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose):
+def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions):
 
     seed = 42
 
@@ -144,6 +150,8 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose):
     y = np.asarray([y[n] for n in mol_names])
 
     cv5 = cv.KFold(n=len(y), n_folds=5, random_state=42, shuffle=True)
+
+    cv_pred = np.copy(y)
 
     # build models
 
@@ -186,7 +194,7 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose):
                 m.fit(x, y)
 
                 # final model
-                m = svm.SVR(kernel='rbf', C=m.best_params_["C"], gamma=m.best_params_["gamma"], random_state=seed)
+                m = svm.SVR(kernel='rbf', C=m.best_params_["C"], gamma=m.best_params_["gamma"])
 
             if current_model == "pls":
                 # choosing optimal parameters
@@ -206,10 +214,21 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose):
                 # final model
                 m = KNeighborsRegressor(n_neighbors=m.best_params_["n_neighbors"])
 
+            # return cv predictions
+            pred = cv.cross_val_predict(m, x, y, cv5)
+            if current_model == 'pls':
+                pred = pred.reshape(pred.shape[0] * pred.shape[1])
+
             # build final model, save it and its stat
             m.fit(x, y)
+
             save_object(m, os.path.join(model_dir, current_model + '.pkl'))
-            save_model_stat(current_model, model_stat_fname, m, x, y, cv5, ncores, model_type, verbose)
+            save_model_stat_2(current_model, model_stat_fname, str(m.get_params())[1:-1], y, pred,
+                              model_type, verbose)
+
+            # save cv predictions
+            if cv_predictions:
+                cv_pred = np.vstack((cv_pred, pred))
 
             if verbose:
                 print(current_model.upper() + ' model was built')
@@ -288,6 +307,8 @@ def main():
                         help='models type: reg for regression and class for classification')
     parser.add_argument('-v', '--verbose', default=1,
                         help='Integer value. 0 - print no details. 1 and more - verbose output. Default: 1.')
+    parser.add_argument('-p', '--cv_predictions', action='store_true', default=True,
+                        help='True/False to output cross-validation predictions.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():
@@ -303,8 +324,10 @@ def main():
                     ncores = cpu_count()
         if o == "model_type": model_type = v
         if o == "verbose": verbose = int(v)
+        if o == "cv_predictions": cv_predictions = v
 
-    main_params(x_fname, y_fname, model_names, ncores, model_type, verbose)
+
+    main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions)
 
 
 if __name__ == '__main__':

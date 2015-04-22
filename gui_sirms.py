@@ -336,7 +336,8 @@ class Tab_1(ttk.Frame):
                           model_names=self.models_frame.get_selected_models(),
                           ncores=max(1, cpu_count() - 1),
                           model_type=self.models_frame.model_type.get(),
-                          verbose=1)
+                          verbose=1,
+                          cv_predictions=True)
 
         # update list of models to plot
         self.master.children['tab_3']._show_models_list()
