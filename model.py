@@ -69,6 +69,16 @@ def get_specificity(obs, pred, classes=(0, 1)):
     return tn/n
 
 
+def get_kappa(obs, pred, classes=(0, 1)):
+    obs_0 = sum(obs == classes[0])
+    pred_0 = sum(pred == classes[0])
+    obs_1 = sum(obs == classes[1])
+    pred_1 = sum(pred == classes[1])
+    baseline = (obs_0 * pred_0 + obs_1 * pred_1) / (len(obs) ** 2)
+    acc = sum(obs == pred) / len(obs)
+    return (acc - baseline) / (1 - baseline)
+
+
 def get_r2_test(obs, pred, mean_training):
     return 1 - (sum((obs - pred) ** 2) / sum((obs - mean_training) ** 2))
 
@@ -82,19 +92,14 @@ def calc_model_stat_2(y, pred, model_type):
     if model_type == 'reg':
 
         d = {"r2": get_r2_test(y, pred, mean(y)),
-             "mse": get_mse(y, pred),
-             "time": strftime("%Y-%m-%d %H:%M:%S")}
+             "mse": get_mse(y, pred)}
 
     elif model_type == 'class':
-        accuracy = cv.cross_val_score(model, X, Y, cv=CV, n_jobs=ncores, scoring='accuracy')
-        spec = cv.cross_val_score(model, X, Y, cv=CV, n_jobs=ncores, scoring=make_scorer(get_specificity))
-        sens = cv.cross_val_score(model, X, Y, cv=CV, n_jobs=ncores, scoring=make_scorer(get_sensitivity))
 
-        d = {"accuracy": mean(accuracy),
-             "sensitivity": mean(sens),
-             "specificity": mean(spec),
-             "time": strftime("%Y-%m-%d %H:%M:%S"),
-             "optimal_params": str(model.get_params())[1:-1]}
+        d = {"accuracy": (get_sensitivity(y, pred) + get_specificity(y, pred)) / 2,
+             "sensitivity": get_sensitivity(y, pred),
+             "specificity": get_specificity(y, pred),
+             "kappa": get_kappa(y, pred)}
 
     return d
 
@@ -111,16 +116,16 @@ def save_model_stat_2(model_name, file_name, model_params, y, pred, model_type, 
         if model_type == 'reg':
             lines = ["Regression\n", "Time\tModel\tR2\tMSE\tOptimal_parameters\n"]
         elif model_type == 'class':
-            lines = ["Classification\n", "Time\tModel\tAccuracy\tSensitivity\tSpecificity\tOptimal_parameters\n"]
+            lines = ["Classification\n", "Time\tModel\tAccuracy\tSensitivity\tSpecificity\tKappa\tOptimal_parameters\n"]
 
     if model_type == 'reg':
-        lines.append(str(d["time"]) + "\t" + model_name + "\t" + "{0:.2f}".format(d["r2"]) + "\t" +
+        lines.append(strftime("%Y-%m-%d %H:%M:%S") + "\t" + model_name + "\t" + "{0:.2f}".format(d["r2"]) + "\t" +
              "{0:.2f}".format(d["mse"]) + "\t" + model_params + "\n")
 
     elif model_type == 'class':
-        lines.append(str(d["time"]) + "\t" + model_name + "\t" + "{0:.2f}".format(d["accuracy"]) + "\t" +
+        lines.append(strftime("%Y-%m-%d %H:%M:%S") + "\t" + model_name + "\t" + "{0:.2f}".format(d["accuracy"]) + "\t" +
                      "{0:.2f}".format(d["sensitivity"]) + "\t" + "{0:.2f}".format(d["specificity"]) + "\t" +
-                     model_params + "\n")
+                     "{0:.2f}".format(d["kappa"]) + "\t" +model_params + "\n")
 
     if verbose:
         print(lines[-1])
@@ -155,141 +160,113 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
 
     # build models
 
-    if model_type == 'reg':
+    for current_model in model_names:
 
-        for current_model in model_names:
+        if verbose:
+            print(current_model.upper() + ' model building...')
 
-            if verbose:
-                print(current_model.upper() + ' model building...')
+        if current_model == "rf":
 
-            if current_model == "rf":
-                # choosing optimal parameters
-                param_grid = {"max_features": [x.shape[1] // 10, x.shape[1] // 7, x.shape[1] // 5, x.shape[1] // 3],
-                              "n_estimators": [500]}
+            # choosing optimal parameters
+            param_grid = {"max_features": [x.shape[1] // 10, x.shape[1] // 7, x.shape[1] // 5, x.shape[1] // 3],
+                          "n_estimators": [500]}
+            if model_type == "reg":
                 m = GridSearchCV(RandomForestRegressor(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
+            elif model_type == "class":
+                m = GridSearchCV(RandomForestClassifier(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
+            m.fit(x, y)
 
-                # final model
+            # final model
+            if model_type == "reg":
                 m = RandomForestRegressor(n_estimators=m.best_params_["n_estimators"],
                                           max_features=m.best_params_["max_features"],
                                           bootstrap=True, random_state=seed)
-
-            if current_model == "gbm":
-                # choosing optimal parameters
-                param_grid = {"n_estimators": [100, 200, 300, 400, 500]}
-                m = GridSearchCV(GradientBoostingRegressor(subsample=0.5, max_features=0.5),
-                                 param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
-
-                # final model
-                m = GradientBoostingRegressor(n_estimators=m.best_params_["n_estimators"],
-                                              subsample=0.5, max_features=0.5,
-                                              random_state=seed)
-
-            if current_model == "svm":
-                # choosing optimal parameters
-                param_grid = {"C": [10 ** i for i in range(0, 5)],
-                              "gamma": [10 ** i for i in range(-6, 0)]}
-                m = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
-
-                # final model
-                m = svm.SVR(kernel='rbf', C=m.best_params_["C"], gamma=m.best_params_["gamma"])
-
-            if current_model == "pls":
-                # choosing optimal parameters
-                param_grid = {"n_components": [i for i in range(1, 8)]}
-                m = GridSearchCV(PLSRegression(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
-
-                # final model
-                m = PLSRegression(n_components=m.best_params_["n_components"])
-
-            if current_model == "knn":
-                # choosing optimal parameters
-                param_grid = {"n_neighbors": [i for i in range(3, 21)]}
-                m = GridSearchCV(KNeighborsRegressor(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
-
-                # final model
-                m = KNeighborsRegressor(n_neighbors=m.best_params_["n_neighbors"])
-
-            # return cv predictions
-            pred = cv.cross_val_predict(m, x, y, cv5)
-            if current_model == 'pls':
-                pred = pred.reshape(pred.shape[0] * pred.shape[1])
-
-            # build final model, save it and its stat
-            m.fit(x, y)
-
-            save_object(m, os.path.join(model_dir, current_model + '.pkl'))
-            save_model_stat_2(current_model, model_stat_fname, str(m.get_params())[1:-1], y, pred,
-                              model_type, verbose)
-
-            # save cv predictions
-            if cv_predictions:
-                cv_pred = np.vstack((cv_pred, pred))
-
-            if verbose:
-                print(current_model.upper() + ' model was built')
-
-    else:
-
-        for current_model in model_names:
-
-            if verbose:
-                print(current_model.upper() + ' model building...')
-
-            if current_model == 'rf':
-                # choosing optimal parameters
-                param_grid = {"max_features": [x.shape[1] // 10, x.shape[1] // 7, x.shape[1] // 5, x.shape[1] // 3],
-                              "n_estimators": [500]}
-                m = GridSearchCV(RandomForestClassifier(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
-
-                # final model
+            elif model_type == "class":
                 m = RandomForestClassifier(n_estimators=m.best_params_["n_estimators"],
                                            max_features=m.best_params_["max_features"],
                                            bootstrap=True, random_state=seed)
 
-            if current_model == "gbm":
-                # choosing optimal parameters
-                param_grid = {"n_estimators": [100, 200, 300, 400, 500]}
+        if current_model == "gbm":
+
+            # choosing optimal parameters
+            param_grid = {"n_estimators": [100, 200, 300, 400, 500]}
+            if model_type == "reg":
+                m = GridSearchCV(GradientBoostingRegressor(subsample=0.5, max_features=0.5),
+                                 param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
+            elif model_type == "class":
                 m = GridSearchCV(GradientBoostingClassifier(subsample=0.5, max_features=0.5),
                                  param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
+            m.fit(x, y)
 
-                # final model
+            # final model
+            if model_type == "reg":
+                m = GradientBoostingRegressor(n_estimators=m.best_params_["n_estimators"],
+                                              subsample=0.5, max_features=0.5, random_state=seed)
+            elif model_type == "class":
                 m = GradientBoostingClassifier(n_estimators=m.best_params_["n_estimators"],
                                                subsample=0.5, max_features=0.5, random_state=seed)
 
-            if current_model == "svm":
-                # choosing optimal parameters
-                param_grid = {"C": [10 ** i for i in range(0, 5)],
-                              "gamma": [10 ** i for i in range(-6, 0)]}
-                m = GridSearchCV(svm.SVC(kernel='rbf'), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
+        if current_model == "svm":
 
-                # final model
+            # choosing optimal parameters
+            param_grid = {"C": [10 ** i for i in range(0, 5)],
+                          "gamma": [10 ** i for i in range(-6, 0)]}
+            if model_type == "reg":
+                m = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
+            elif model_type == "class":
+                m = GridSearchCV(svm.SVC(kernel='rbf'), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
+            m.fit(x, y)
+
+            # final model
+            if model_type == "reg":
+                m = svm.SVR(kernel='rbf', C=m.best_params_["C"], gamma=m.best_params_["gamma"])
+            elif model_type == "class":
                 m = svm.SVC(kernel='rbf', C=m.best_params_["C"], gamma=m.best_params_["gamma"],
                             probability=True, random_state=seed)
 
-            if current_model == "knn":
-                # choosing optimal parameters
-                param_grid = {"n_neighbors": [i for i in range(3, 21)]}
-                m = GridSearchCV(KNeighborsClassifier(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
-                m.fit(x, y)
+        if current_model == "pls" and model_type == "reg":
 
-                # final model
+            # choosing optimal parameters
+            param_grid = {"n_components": [i for i in range(1, 8)]}
+            m = GridSearchCV(PLSRegression(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
+            m.fit(x, y)
+
+            # final model
+            m = PLSRegression(n_components=m.best_params_["n_components"])
+
+        if current_model == "knn":
+            # choosing optimal parameters
+            param_grid = {"n_neighbors": [i for i in range(3, 21)]}
+            if model_type == "reg":
+                m = GridSearchCV(KNeighborsRegressor(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
+            elif model_type == "class":
+                m = GridSearchCV(KNeighborsClassifier(), param_grid, n_jobs=ncores, cv=cv5, refit=False, verbose=verbose)
+            m.fit(x, y)
+
+            # final model
+            if model_type == "reg":
+                m = KNeighborsRegressor(n_neighbors=m.best_params_["n_neighbors"])
+            elif model_type == "class":
                 m = KNeighborsClassifier(n_neighbors=m.best_params_["n_neighbors"])
 
-            # build final model, save it and its stat
-            m.fit(x, y)
-            save_object(m, os.path.join(model_dir, current_model + '.pkl'))
-            save_model_stat(current_model, model_stat_fname, m, x, y, cv5, ncores, model_type, verbose)
+        # return cv predictions
+        pred = cv.cross_val_predict(m, x, y, cv5)
+        if current_model == 'pls':
+            pred = pred.reshape(pred.shape[0] * pred.shape[1])
 
-            if verbose:
-                print(current_model.upper() + ' model was built')
+        # build final model, save it and its stat
+        m.fit(x, y)
+
+        save_object(m, os.path.join(model_dir, current_model + '.pkl'))
+        save_model_stat_2(current_model, model_stat_fname, str(m.get_params())[1:-1], y, pred,
+                          model_type, verbose)
+
+        # save cv predictions
+        if cv_predictions:
+            cv_pred = np.vstack((cv_pred, pred))
+
+        if verbose:
+            print(current_model.upper() + ' model was built')
 
 
 def main():

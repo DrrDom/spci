@@ -418,7 +418,7 @@ class Tab_1(ttk.Frame):
         ttk.Label(frame, text='property field name').grid(column=2, row=2, sticky=(tk.W), padx=5)
         ttk.Entry(frame, width=70, textvariable=self.sdf_path).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
         ttk.Button(frame, text='Browse...', command=self.__select_sdf_path).grid(column=1, row=3, sticky=(tk.W), padx=5, pady=(0, 5))
-        ttk.Combobox(frame, name='property_field_name', width=20, textvariable=self.property_field_name).grid(column=2, row=3, sticky=(tk.W), padx=5, pady=(0, 5))
+        ttk.Combobox(frame, name='property_field_name', width=20, textvariable=self.property_field_name, state='readonly').grid(column=2, row=3, sticky=(tk.W), padx=5, pady=(0, 5))
 
         frame = ttk.Labelframe(self, text='Optional. Compound names. External text file with compound property values', name='optional_label_frame')
         frame.grid(column=0, row=4, sticky=(tk.E, tk.W), columnspan=4, padx=5, pady=5)
@@ -429,7 +429,7 @@ class Tab_1(ttk.Frame):
         inner_frame = ttk.Frame(frame, name='inner_frame')
         inner_frame.grid(column=0, row=3, columnspan=4, sticky=(tk.W, tk.E))
         ttk.Radiobutton(inner_frame, text='Use field values as compound names from SDF file', variable=self.compound_names, value='field').grid(column=0, row=3, sticky=(tk.W), padx=5, pady=1)
-        cmbbox = ttk.Combobox(inner_frame, name='sdf_id_field_name', width=20, textvariable=self.sdf_id_field_name)
+        cmbbox = ttk.Combobox(inner_frame, name='sdf_id_field_name', width=20, textvariable=self.sdf_id_field_name, state='readonly')
         cmbbox.grid(column=1, row=3, sticky=(tk.W), padx=5, pady=1)
         cmbbox.bind('<<ComboboxSelected>>', self.__set_compound_names_choice_event)
         # ttk.Entry(inner_frame, width=20, textvariable=self.sdf_id_field_name).grid(column=1, row=3, sticky=(tk.W), padx=5, pady=1)
