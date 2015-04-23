@@ -268,6 +268,15 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
         if verbose:
             print(current_model.upper() + ' model was built')
 
+    # save CV predictions
+    if cv_predictions:
+        np.savetxt(os.path.join(model_dir, "models_cv_pred.txt"),
+                   np.transpose(cv_pred),
+                   fmt="%.4f",
+                   delimiter="\t",
+                   comments="",
+                   header="Obs\t" + "\t".join(model_names))
+
 
 def main():
 
