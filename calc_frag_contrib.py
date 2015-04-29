@@ -25,7 +25,7 @@ def load_sirms(fname):
             tmp = line.strip().split("\t")
             case_names.append(tmp[0])
             x.append(tuple(map(float, tmp[1:])))
-    return (descr_names, case_names, np.asarray(x))
+    return descr_names, case_names, np.asarray(x)
 
 
 def split_mol_frag_names(names, ids):
@@ -40,7 +40,7 @@ def split_mol_frag_names(names, ids):
             tmp = names[i].split("#")
             mol_names.append(tmp[0])
             frag_names.append(tmp[1])
-    return (mol_names, frag_names)
+    return mol_names, frag_names
 
 
 def prepare_dataset(x_train, x_frag, prop_name, descr_names, x_train_mol_names, x_frag_mol_names):
@@ -57,7 +57,7 @@ def prepare_dataset(x_train, x_frag, prop_name, descr_names, x_train_mol_names, 
     ids = np.array(["|" + prop_name + "|" in el for el in descr_names])
     rows = np.where(np.array(x_train_mol_names) == np.array(x_frag_mol_names)[:, np.newaxis])[1]
     output = np.where(ids, x_frag, x_train[rows])
-    return (output)
+    return output
 
 
 def save_contrib(fname, contrib_dict, frag_full_names):
@@ -215,26 +215,26 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
                 mol_names, x = sirms_file.read_next()
 
-    elif model_type == 'class':
-
-        for model_name in model_names:
-
-            frag_contrib[model_name] = dict()
-            m = joblib.load(os.path.join(model_dir, model_name + ".pkl"))
-
-            pos_id = m.classes_.tolist().index(1)
-            xtrain_pred = [i[pos_id] for i in m.predict_proba(x_train)]
-            xtrain_pred = dict(zip(x_train_mol_names, xtrain_pred))
-
-            for prop_name in prop_names:
-                if prop_name != "overall":
-                    x_frag_prep = prepare_dataset(x_train, x_frag, prop_name, descr_names, x_train_mol_names,
-                                                  x_frag_mol_names)
-                    xfrag_pred = [i[pos_id] for i in m.predict_proba(x_frag_prep)]
-                else:
-                    xfrag_pred = [i[pos_id] for i in m.predict_proba(x_frag)]
-
-                frag_contrib[model_name][prop_name] = [xtrain_pred[mol_name] - xfrag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)]
+    # elif model_type == 'class':
+    #
+    #     for model_name in model_names:
+    #
+    #         frag_contrib[model_name] = dict()
+    #         m = joblib.load(os.path.join(model_dir, model_name + ".pkl"))
+    #
+    #         pos_id = m.classes_.tolist().index(1)
+    #         xtrain_pred = [i[pos_id] for i in m.predict_proba(x_train)]
+    #         xtrain_pred = dict(zip(x_train_mol_names, xtrain_pred))
+    #
+    #         for prop_name in prop_names:
+    #             if prop_name != "overall":
+    #                 x_frag_prep = prepare_dataset(x_train, x_frag, prop_name, descr_names, x_train_mol_names,
+    #                                               x_frag_mol_names)
+    #                 xfrag_pred = [i[pos_id] for i in m.predict_proba(x_frag_prep)]
+    #             else:
+    #                 xfrag_pred = [i[pos_id] for i in m.predict_proba(x_frag)]
+    #
+    #             frag_contrib[model_name][prop_name] = [xtrain_pred[mol_name] - xfrag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)]
 
     save_contrib(out_fname, frag_contrib, sirms_file.frag_full_names)
 

@@ -253,17 +253,6 @@ class Tab_1(ttk.Frame):
 
         input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
 
-        # extract property and save to separate file
-        if self.property_field_name.get() != '':
-            property_filename = os.path.join(os.path.dirname(self.sdf_path.get()),
-                                             self.property_field_name.get().strip() + '.txt')
-            extractsdf.main_params(in_fname=input_sdf,
-                                   out_fname=property_filename,
-                                   title=True,
-                                   field_names=[self.property_field_name.get().strip()],
-                                   all_fields=False)
-            self.property_file_path.set(property_filename)
-
         # standardization and property labeling
         if self.chemaxon_usage.get() == 'with_chemaxon':
 
@@ -302,6 +291,17 @@ class Tab_1(ttk.Frame):
             if os.path.isfile(output_sdf):
                 os.remove(output_sdf)
             os.rename(tmp_sdf, output_sdf)
+
+        # extract property and save to separate file
+        if self.property_field_name.get() != '':
+            property_filename = os.path.join(os.path.dirname(self.sdf_path.get()),
+                                             self.property_field_name.get().strip() + '.txt')
+            extractsdf.main_params(in_fname=output_sdf,
+                                   out_fname=property_filename,
+                                   title=True,
+                                   field_names=[self.property_field_name.get().strip()],
+                                   all_fields=False)
+            self.property_file_path.set(property_filename)
 
         # copy setup.txt to folder with sdf file
         shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),

@@ -19,11 +19,39 @@ def add_pH(params, pH):
     return (params)
 
 
+def add_HB(molstr):
+
+    for i, line in enumerate(molstr):
+        if line.strip() == ">  <ACC>":
+            acc = ["I" if el == "0" else "A" for el in molstr[i+1].strip().split(";")]
+        if line.strip() == ">  <DON>":
+            don = ["I" if el == "0" else "D" for el in molstr[i+1].strip().split(";")]
+
+    hb = []
+    for a, d in zip(acc, don):
+        if a == "A" and d == "D":
+            hb.append("AD")
+        elif a == "A":
+            hb.append("A")
+        elif d == "D":
+            hb.append("D")
+        else:
+            hb.append("I")
+
+    molstr.insert(len(molstr) - 1, ">  <HB>\n")
+    molstr.insert(len(molstr) - 1, ";".join(hb) + "\n")
+    molstr.insert(len(molstr) - 1, "\n")
+
+    return molstr
+
+
 def main_params(in_fname, out_fname, prop, pH, cxcalc_path):
 
     start_params = [cxcalc_path]
     start_params.extend(["-o", out_fname])
     start_params.append("-S")
+    log_fname = os.path.splitext(out_fname)[0] + "_cxcalc.log"
+    start_params.extend(["--log", log_fname])
     start_params.append(in_fname)
 
     # logp, charge, atom_polarizability, refractivity, acc, don
@@ -48,50 +76,50 @@ def main_params(in_fname, out_fname, prop, pH, cxcalc_path):
     if run_params != start_params:
         call(run_params, shell=True)
 
+    # read numbers of molecules which produce errors
+    mol_errors = []
+    with open(log_fname) as f:
+        for line in f:
+            if line.find("<_MOLCOUNT>") >= 0:
+                mol_errors.append(int(f.readline().strip()))
+
     # create new field HB - hydrogen bond parameters
     # A - acceptor
     # D - donor
     # AD - acceptor & donor
     # I - neither acceptor nor donor
+    # and remove error molecules
+
     tmp_out_fname = out_fname + ".tmp"
-    if "acc" in prop and "don" in prop:
+    add_hb = "acc" in prop and "don" in prop
+    if add_hb or mol_errors:
         with open(tmp_out_fname, "wt") as fout:
             with open(out_fname) as fin:
-                line = fin.readline()
-                while line:
-                    if line.strip() != "$$$$":
-                        fout.write(line)
-                    if line.strip() == ">  <ACC>":
-                        tmp = fin.readline()
-                        fout.write(tmp)
-                        acc = ["I" if el == "0" else "A" for el in tmp.strip().split(";")]
-                    if line.strip() == ">  <DON>":
-                        tmp = fin.readline()
-                        fout.write(tmp)
-                        don = ["I" if el == "0" else "D" for el in tmp.strip().split(";")]
-                    if line.strip() == "$$$$":
-                        hb = []
-                        for a, d in zip(acc, don):
-                            if a == "A" and d == "D":
-                                hb.append("AD")
-                            elif a == "A":
-                                hb.append("A")
-                            elif d == "D":
-                                hb.append("D")
-                            else:
-                                hb.append("I")
-                        fout.write(">  <HB>\n")
-                        fout.write(";".join(hb) + "\n")
-                        fout.write("\n")
-                        fout.write(line)
-                    line = fin.readline()
+
+                molstr = []
+                cur_mol_id = 1
+                for line in fin:
+                    if line.rstrip() != "$$$$":
+                        molstr.append(line)
+                    else:
+                        molstr.append(line)
+                        if mol_errors and cur_mol_id in mol_errors:
+                            molstr = []
+                        elif add_hb:
+                            molstr = add_HB(molstr)
+                            fout.writelines(molstr)
+                            molstr = []
+                        cur_mol_id += 1
+
         os.remove(out_fname)
         os.rename(tmp_out_fname, out_fname)
 
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Calculate atomic properties with Chemaxon cxcalc tool.')
+    parser = argparse.ArgumentParser(description='Calculate atomic properties with Chemaxon cxcalc tool. '
+                                                 'Molecules which produce errors are omitted from output file.'
+                                                 'Omitted molecules will be listed in the created log file.')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=True,
                         help='input sdf file with standardized structures, molecules should have titles')
     parser.add_argument('-o', '--out', metavar='output.sdf', required=True,
