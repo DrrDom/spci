@@ -527,7 +527,8 @@ class Tab_2(ttk.Frame):
                                       model_dir=model_dir,
                                       prop_names=prop_name,
                                       model_type=self.master.children['tab_1'].models_frame.model_type.get(),
-                                      verbose=True)
+                                      verbose=True,
+                                      save_pred=True)
 
         print("Calculation completed.")
 

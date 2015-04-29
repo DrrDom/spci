@@ -159,7 +159,13 @@ def predict(x, model, model_name, model_type):
     return pred
 
 
-def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose):
+def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred):
+
+    if save_pred:
+        save_pred_fname = os.path.splitext(out_fname)[0] + "_pred.txt"
+        if os.path.isfile(save_pred_fname):
+            print("File with prediction was erased.")
+            os.remove(save_pred_fname)
 
     sirms_file = SirmsFile(x_fname)
 
@@ -213,6 +219,13 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
                     frag_contrib[model_name][prop_name].extend([train_pred[mol_name] - frag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)])
 
+                if save_pred:
+                    with open(save_pred_fname, "at") as f:
+                        for k, v in train_pred.items():
+                            f.write(k + "\t" + model_name + "\t" + str(v) + "\n")
+                        for m_name, f_name, pred_value in zip(x_frag_mol_names, x_frag_frag_names, frag_pred):
+                            f.write(m_name + "#" + f_name + "\t" + model_name + "\t" + str(pred_value) + "\n")
+
                 mol_names, x = sirms_file.read_next()
 
     # elif model_type == 'class':
@@ -257,6 +270,8 @@ def main():
                         help='models type: reg for regression and class for classification')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='show progress on the screen.')
+    parser.add_argument('-s', '--save_intermediate_prediction', action='store_true', default=False,
+                        help='save intermediate prediction to text file.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():
@@ -267,8 +282,9 @@ def main():
         if o == "properties": prop_names = v
         if o == "model_type": model_type = v
         if o == "verbose": verbose = v
+        if o == "save_intermediate_prediction": save_pred = v
 
-    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose)
+    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred)
 
 
 if __name__ == '__main__':

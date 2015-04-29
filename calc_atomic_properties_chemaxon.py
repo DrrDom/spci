@@ -78,10 +78,11 @@ def main_params(in_fname, out_fname, prop, pH, cxcalc_path):
 
     # read numbers of molecules which produce errors
     mol_errors = []
-    with open(log_fname) as f:
-        for line in f:
-            if line.find("<_MOLCOUNT>") >= 0:
-                mol_errors.append(int(f.readline().strip()))
+    if os.path.isfile(log_fname):
+        with open(log_fname) as f:
+            for line in f:
+                if line.find("<_MOLCOUNT>") >= 0:
+                    mol_errors.append(int(f.readline().strip()))
 
     # create new field HB - hydrogen bond parameters
     # A - acceptor
