@@ -271,11 +271,11 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
     # save CV predictions
     if cv_predictions:
         np.savetxt(os.path.join(model_dir, "models_cv_pred.txt"),
-                   np.transpose(cv_pred),
-                   fmt="%.4f",
+                   np.column_stack([mol_names, np.round(np.transpose(cv_pred), 3)]),
+                   fmt="%s",
                    delimiter="\t",
                    comments="",
-                   header="Obs\t" + "\t".join(model_names))
+                   header="Mol\tObs\t" + "\t".join(model_names))
 
 
 def main():
