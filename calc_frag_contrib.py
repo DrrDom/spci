@@ -67,7 +67,6 @@ def save_contrib(fname, contrib_dict, frag_full_names):
             for prop_name in contrib_dict[model_name].keys():
                 f.write(model_name + "_" + prop_name + "\t" +
                         "\t".join(["{0:.6f}".format(i) for i in contrib_dict[model_name][prop_name]]) + "\n")
-                        # "\t".join(map(str, contrib_dict[model_name][prop_name])) + "\n")
 
 
 class SirmsFile():
@@ -102,6 +101,7 @@ class SirmsFile():
             lines = [line.strip().split('\t') for line in self.file]
 
         elif nlines > 0:
+
             # read first nlines of available and additional lines containing fragments ('#' symbol in molname)
 
             i = 0
@@ -114,17 +114,20 @@ class SirmsFile():
                 if i >= nlines:
                     break
 
-            # read next lines until new molecule
-            while True:
-                cur_pos = self.file.tell()
-                line = self.file.readline()
-                if not line:
-                    break
-                if line.split('\t', 1)[0].find('#') == -1:
-                    self.file.seek(cur_pos)
-                    break
-                else:
-                    lines.append(line.strip().split('\t'))
+            # read next lines until meet a new molecule
+            if lines:
+                while True:
+                    cur_mol = lines[-1][0].split("#")[0]
+                    cur_pos = self.file.tell()
+                    line = self.file.readline()
+                    if not line:
+                        break
+                    # if line.split('\t', 1)[0].find('#') == -1:
+                    if line.split('#')[0] == cur_mol:
+                        lines.append(line.strip().split('\t'))
+                    else:
+                        self.file.seek(cur_pos)
+                        break
 
         mol_names = []
         x = []
@@ -219,12 +222,12 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
                     frag_contrib[model_name][prop_name].extend([train_pred[mol_name] - frag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)])
 
-                if save_pred:
-                    with open(save_pred_fname, "at") as f:
-                        for k, v in train_pred.items():
-                            f.write(k + "\t" + model_name + "\t" + str(v) + "\n")
-                        for m_name, f_name, pred_value in zip(x_frag_mol_names, x_frag_frag_names, frag_pred):
-                            f.write(m_name + "#" + f_name + "\t" + model_name + "\t" + str(pred_value) + "\n")
+                    if save_pred:
+                        with open(save_pred_fname, "at") as f:
+                            for k, v in train_pred.items():
+                                f.write(k + "\t" + model_name + "\t" + prop_name + "\t" + str(v) + "\n")
+                            for m_name, f_name, pred_value in zip(x_frag_mol_names, x_frag_frag_names, frag_pred):
+                                f.write(m_name + "#" + f_name + "\t" + model_name + "\t" + prop_name + "\t" + str(pred_value) + "\n")
 
                 mol_names, x = sirms_file.read_next()
 
