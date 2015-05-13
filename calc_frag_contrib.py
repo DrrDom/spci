@@ -122,8 +122,7 @@ class SirmsFile():
                     line = self.file.readline()
                     if not line:
                         break
-                    # if line.split('\t', 1)[0].find('#') == -1:
-                    if line.split('#')[0] == cur_mol:
+                    if line.split('\t', 1)[0].split('#')[0] == cur_mol:
                         lines.append(line.strip().split('\t'))
                     else:
                         self.file.seek(cur_pos)
