@@ -84,11 +84,11 @@ class SirmsFile():
 
         # choose chunk size dependent on the bit version of running Python
         # it will allow to avoid MemoryError of numpy for big files
-        bit_version = platform.architecture()[0]
-        if bit_version == '64bit':
-            nlines = -1
-        else:
-            nlines = 1000
+        # bit_version = platform.architecture()[0]
+        # if bit_version == '64bit':
+        #     nlines = -1
+        # else:
+        nlines = 1000
 
         # skip header
         if self.file.tell() == 0:

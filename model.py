@@ -128,7 +128,7 @@ def save_model_stat_2(model_name, file_name, model_params, y, pred, model_type, 
                      "{0:.2f}".format(d["kappa"]) + "\t" +model_params + "\n")
 
     if verbose:
-        print(lines[-1])
+        print(lines[-1].strip())
 
     open(file_name, "wt").writelines(lines)
 
@@ -266,7 +266,7 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
             cv_pred = np.vstack((cv_pred, pred))
 
         if verbose:
-            print(current_model.upper() + ' model was built')
+            print(current_model.upper() + ' model was built\n')
 
     # save CV predictions
     if cv_predictions:
