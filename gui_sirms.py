@@ -24,6 +24,7 @@ import sdf_field2title
 import calc_atomic_properties_chemaxon
 import model
 import find_frags_indigo as find_frags
+import find_rings_indigo as find_rings
 import calc_frag_contrib
 import plot_contributions
 import extractsdf
@@ -484,12 +485,18 @@ class Tab_2(ttk.Frame):
             frag_fname = os.path.join(get_script_path(), 'default.smarts')
 
         # find atom ids
-        find_frags.main_params(in_sdf=sdf_fname,
-                               out_txt=ids_fname,
-                               in_frags=frag_fname,
-                               remove_all=False,
-                               verbose=True,
-                               error_mol=True)
+        if self.frags_choice.get() in ['user', 'default']:
+            find_frags.main_params(in_sdf=sdf_fname,
+                                   out_txt=ids_fname,
+                                   in_frags=frag_fname,
+                                   remove_all=False,
+                                   verbose=True,
+                                   error_mol=True)
+        elif self.frags_choice.get() == 'rings':
+            find_rings.main_params(in_sdf=sdf_fname,
+                                   out_txt=ids_fname,
+                                   verbose=True,
+                                   error_mol=True)
 
         # calc sirms descriptors
         if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
@@ -550,20 +557,22 @@ class Tab_2(ttk.Frame):
 
         ttk.Radiobutton(frame, text='Default fragments', name='default_frag', value='default', variable=self.frags_choice).\
             grid(column=0, row=0, sticky=tk.W, padx=5, pady=(3, 1))
-        ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice, state='disabled').\
+        ttk.Radiobutton(frame, text='All rings', name='rings_frag', value='rings', variable=self.frags_choice).\
             grid(column=0, row=1, sticky=tk.W, padx=5, pady=(0, 1))
-        ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice, state='disabled').\
-            grid(column=0, row=2, sticky=tk.W, padx=5, pady=(0, 1))
-        ttk.Radiobutton(frame, text='Murcko scaffolds (frameworks)', name='murcko_frag',  value='murcko', variable=self.frags_choice, state='disabled').\
+        ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice, state='disabled').\
             grid(column=0, row=3, sticky=tk.W, padx=5, pady=(0, 1))
+        ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice, state='disabled').\
+            grid(column=0, row=5, sticky=tk.W, padx=5, pady=(0, 1))
+        ttk.Radiobutton(frame, text='Murcko scaffolds (frameworks)', name='murcko_frag',  value='murcko', variable=self.frags_choice, state='disabled').\
+            grid(column=0, row=7, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='User-defined fragments', name='user_frag', value='user', variable=self.frags_choice).\
-            grid(column=0, row=4, sticky=tk.W, padx=5, pady=(0, 1))
+            grid(column=0, row=9, sticky=tk.W, padx=5, pady=(0, 1))
 
         self.__entry_user_frags_path = ttk.Entry(frame, width=70, textvariable=self.user_frags_path)
-        self.__entry_user_frags_path.grid(column=0, row=5, sticky=(tk.W, tk.E), padx=5, pady=(0, 3))
+        self.__entry_user_frags_path.grid(column=0, row=15, sticky=(tk.W, tk.E), padx=5, pady=(0, 3))
 
         self.__btn_user_frags_path = ttk.Button(frame, text='Browse...', command=self.__select_user_frags)
-        self.__btn_user_frags_path.grid(column=1, row=5, sticky=(tk.W), padx=5, pady=(0, 3))
+        self.__btn_user_frags_path.grid(column=1, row=15, sticky=(tk.W), padx=5, pady=(0, 3))
 
         frame = tk.Frame(self)
         frame.grid(column=0, row=6, columnspan=2)
