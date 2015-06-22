@@ -7,7 +7,7 @@
 # license         : GPL3
 #==============================================================================
 
-import  os
+import os
 import argparse
 
 from indigo import Indigo, IndigoException
@@ -29,7 +29,7 @@ def main_params(in_sdf, out_txt, verbose, error_mol):
 
             try:
 
-                mol.dearomatize()  # in order to avoid different aromatic forms in in different molecules
+                mol.dearomatize()  # in order to avoid different aromatic forms in different molecules
                 mol_name = mol.name()
                 if verbose:
                     print("Searching for rings in", mol_name)
@@ -41,7 +41,9 @@ def main_params(in_sdf, out_txt, verbose, error_mol):
                 for i, r in enumerate(rings):
                     # if ring is not present in a bigger one than add it to the output text file
                     if all([not r[1].issubset(rings[j][1]) for j in range(i-1)]):
-                        f.write(mol_name + "\t" + r[0] + "\t" + "\t".join(map(str, tuple(r[1]))) + "\n")
+                        # create 1-based indices
+                        tmp_ids = list(map(lambda x: x + 1, r[1]))
+                        f.write(mol_name + "\t" + r[0] + "\t" + "\t".join(map(str, tmp_ids)) + "\n")
 
             except IndigoException as e:
 
