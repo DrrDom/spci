@@ -14,12 +14,14 @@ import sys
 import ast
 import shutil
 import tkinter as tk
+
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import font as tkfont
 from multiprocessing import cpu_count
 from subprocess import call
+
 import sdf_field2title
 import calc_atomic_properties_chemaxon
 import model
@@ -30,9 +32,7 @@ import calc_frag_contrib
 import plot_contributions
 import extractsdf
 
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
 sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
-sys.path.insert(1, os.path.join(sys.path[0], '../github_sirms'))
 import sirms
 
 
