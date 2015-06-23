@@ -404,7 +404,7 @@ class Tab_1(ttk.Frame):
         self.property_field_name = tk.StringVar()
         self.compound_names = tk.StringVar(value='gen')
 
-        chemaxon_frame = ttk.Labelframe(self, text='Structural/functional interpretation', name='chemaxon_frame')
+        chemaxon_frame = ttk.Labelframe(self, text='Structural/physico-chemical interpretation', name='chemaxon_frame')
         chemaxon_frame.grid(column=0, row=0, sticky=(tk.E, tk.W), columnspan=4, padx=5, pady=5)
         ttk.Radiobutton(chemaxon_frame, text='Structural & functional (Chemaxon required)', variable=self.chemaxon_usage, value='with_chemaxon').grid(column=0, row=0, sticky=(tk.W), padx=5, pady=1)
         ttk.Radiobutton(chemaxon_frame, text='Structural only (no Chemaxon usage)', variable=self.chemaxon_usage, value='no_chemaxon').grid(column=0, row=1, sticky=(tk.W), padx=5, pady=1)

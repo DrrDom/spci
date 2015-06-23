@@ -4,10 +4,10 @@ Tool for mining structure-property relationships from chemical datasets
 
 Detailed description
 -----
-Retrives structure-property relationship from datasets in a chemically meaningful way.
-Returns estimated contributions of fragments to the investigated property of compounds from a dataset and can estimate contribution of different phyico-chemical factors as well.
-Patial description was given in the paper http://dx.doi.org/10.1002/minf.201300029
-New paper describing more detalis is in preparation.
+Retrieves structure-property relationship from datasets in a chemically meaningful way.
+Returns estimated contributions of fragments to the investigated property of compounds from a dataset and can estimate contribution of different physico-chemical factors as well.
+Partial description was given in the paper http://dx.doi.org/10.1002/minf.201300029
+New paper describing more details is in preparation.
 
 Features
 -----
@@ -20,7 +20,7 @@ Features
 
 Manual
 -----
-Short manual is inluded.
+Short manual is included.
 
 Visualization of results
 -----

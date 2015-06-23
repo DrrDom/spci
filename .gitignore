@@ -1,6 +1,6 @@
 __pycache__
 .idea
 tests
-manual
+manual/*.docx
 batch
 output_zip
