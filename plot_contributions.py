@@ -14,6 +14,8 @@ from collections import defaultdict, Counter
 import pprint
 import numpy as np
 
+mol_frag_sep = "###"
+
 
 def read_contrib_file(fname, model_names, min_M, min_N, contr_names):
     """
@@ -33,7 +35,7 @@ def read_contrib_file(fname, model_names, min_M, min_N, contr_names):
         frag_names = []
 
         for n in names:
-            mol_name, frag_name = n.split("#")
+            mol_name, frag_name = n.split(mol_frag_sep)
             frag_mol_names[frag_name].append(mol_name)
             frag_names.append(frag_name)
 

@@ -28,6 +28,7 @@ import model
 import find_frags_indigo as find_frags
 import find_rings_indigo as find_rings
 import find_murcko_indigo as find_murcko
+import find_frags_auto_indigo as find_frags_auto
 import calc_frag_contrib
 import plot_contributions
 import extractsdf
@@ -503,6 +504,11 @@ class Tab_2(ttk.Frame):
                                     out_txt=ids_fname,
                                     verbose=True,
                                     error_mol=True)
+        elif self.frags_choice.get() == 'auto':
+            find_frags_auto.main_params(in_sdf=sdf_fname,
+                                        out_txt=ids_fname,
+                                        verbose=True,
+                                        error_fname=os.path.join(wd, "errors_frags_auto.txt"))
 
         # calc sirms descriptors
         if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
@@ -567,10 +573,12 @@ class Tab_2(ttk.Frame):
             grid(column=0, row=1, sticky=tk.W, padx=5, pady=(0, 1))
         # ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice, state='disabled').\
         #     grid(column=0, row=3, sticky=tk.W, padx=5, pady=(0, 1))
-        ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice, state='disabled').\
-            grid(column=0, row=5, sticky=tk.W, padx=5, pady=(0, 1))
+        # ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice, state='disabled').\
+        #     grid(column=0, row=5, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='Murcko scaffolds (frameworks)', name='murcko_frag',  value='murcko', variable=self.frags_choice).\
             grid(column=0, row=7, sticky=tk.W, padx=5, pady=(0, 1))
+        ttk.Radiobutton(frame, text='Automatic fragmentation', name='auto_frag', value='auto', variable=self.frags_choice).\
+            grid(column=0, row=8, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='User-defined fragments', name='user_frag', value='user', variable=self.frags_choice).\
             grid(column=0, row=9, sticky=tk.W, padx=5, pady=(0, 1))
 

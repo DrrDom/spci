@@ -75,8 +75,8 @@ def load_query_fragments(fname):
     elif fname.endswith(".smart") or fname.endswith(".smarts") or fname.endswith(".txt"):
         frags = load_smarts_file(fname)
     else:
-        print("Unsupported extension of fragments file. Use only smi ot smiles for SMILES; "
-              "sdf for SDF; sma, smarts, txt for SMARTS")
+        print("Unsupported extension of fragments file. Use only smi or smiles for SMILES; "
+              "sdf for SDF; smart, smarts, txt for SMARTS")
 
     return frags
 

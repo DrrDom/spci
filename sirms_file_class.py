@@ -9,6 +9,7 @@
 
 import numpy as np
 
+mol_frag_sep = "###"
 
 class SirmsFile():
 
@@ -24,6 +25,9 @@ class SirmsFile():
         self.__is_frag_file = frag_file      # set which file to read ordinary (False) or with fragments (True)
                                              # in the latter case each chunk will contain all fragments for each
                                              # read molecules (another reading process)
+
+    def get_frag_full_names(self):
+        return self.__frag_full_names
 
     def reset_read(self):
         self.__file.seek(0)
@@ -50,12 +54,12 @@ class SirmsFile():
         # read next lines until meet a new molecule
         if self.__is_frag_file and lines:
             while True:
-                cur_mol = lines[-1][0].split("#")[0]
+                cur_mol = lines[-1][0].split(mol_frag_sep)[0]
                 cur_pos = self.__file.tell()
                 line = self.__file.readline()
                 if not line:
                     break
-                if line.split('\t', 1)[0].split('#')[0] == cur_mol:
+                if line.split('\t', 1)[0].split(mol_frag_sep)[0] == cur_mol:
                     lines.append(line.strip().split('\t'))
                 else:
                     self.__file.seek(cur_pos)
@@ -69,7 +73,7 @@ class SirmsFile():
 
         # add read frag names to the list (remain only mol name and frag name, e.g. mol1#frag1, not mol1#frag1#1)
         if not self.__is_frag_full_names_read:
-            self.__frag_full_names.extend(['#'.join(mol_name.split('#')[0:2]) for mol_name in mol_names if mol_name.find('#') > -1])
+            self.__frag_full_names.extend([mol_name.rsplit('#', 1)[0] for mol_name in mol_names if mol_name.find(mol_frag_sep) > -1])
 
         # if EOF then stop updating the list of fragments (it is read only once)
         if not self.__is_frag_full_names_read and len(mol_names) < self.__nlines:

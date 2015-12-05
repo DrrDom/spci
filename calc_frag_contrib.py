@@ -17,6 +17,8 @@ from collections import defaultdict
 
 from sirms_file_class import SirmsFile
 
+mol_frag_sep = "###"
+
 
 def load_sirms(fname):
     with open(fname) as f:
@@ -39,7 +41,7 @@ def split_mol_frag_names(names, ids):
     frag_names = []
     for i, el in enumerate(ids):
         if el:
-            tmp = names[i].split("#")
+            tmp = names[i].split(mol_frag_sep)
             mol_names.append(tmp[0])
             frag_names.append(tmp[1])
     return mol_names, frag_names
@@ -193,14 +195,14 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
             m = joblib.load(os.path.join(model_dir, model_name + ".pkl"))
 
             sirms_file.reset_read()
-            mol_names, x = sirms_file.read_next()
+            mol_names, var_names, x = sirms_file.read_next()
 
             while mol_names:
 
                 if scale is not None:
                     x = scale.transform(x)
 
-                x_frag_ids = ["#" in n for n in mol_names]
+                x_frag_ids = [mol_frag_sep in n for n in mol_names]
                 x_train_ids = [not i for i in x_frag_ids]
 
                 x_frag_mol_names, x_frag_frag_names = split_mol_frag_names(mol_names, x_frag_ids)
@@ -216,7 +218,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
                         x_frag_prep = prepare_dataset(x[np.asarray(x_train_ids), ],
                                                       x[np.asarray(x_frag_ids), ],
                                                       prop_name,
-                                                      sirms_file.varnames,
+                                                      var_names,
                                                       x_train_mol_names,
                                                       x_frag_mol_names)
                         frag_pred = predict(x_frag_prep, m, model_name, model_type)
@@ -230,7 +232,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
                             for m_name, f_name, pred_value in zip(x_frag_mol_names, x_frag_frag_names, frag_pred):
                                 f.write(m_name + "#" + f_name + "\t" + model_name + "\t" + prop_name + "\t" + str(pred_value) + "\n")
 
-                mol_names, x = sirms_file.read_next()
+                mol_names, var_names, x = sirms_file.read_next()
 
     # elif model_type == 'class':
     #
@@ -253,7 +255,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     #
     #             frag_contrib[model_name][prop_name] = [xtrain_pred[mol_name] - xfrag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)]
 
-    save_contrib(out_fname, frag_contrib, sirms_file.frag_full_names)
+    save_contrib(out_fname, frag_contrib, sirms_file.get_frag_full_names())
 
 
 def main():
