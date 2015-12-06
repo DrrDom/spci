@@ -73,81 +73,6 @@ def save_contrib(fname, contrib_dict, frag_full_names):
                         "\t".join(["{0:.6f}".format(i) for i in contrib_dict[model_name][prop_name]]) + "\n")
 
 
-# class SirmsFile():
-#
-#     def __init__(self, fname):
-#         self.varnames = open(fname).readline().strip().split('\t')[1:]
-#         self.file = open(fname)
-#         self.frag_full_names = []          # keep the names of all fragments which were read
-#         self._is_frag_full_names_read = False
-#
-#     def reset_read(self):
-#         self.file.seek(0)
-#
-#     def read_next(self):
-#
-#         # choose chunk size dependent on the bit version of running Python
-#         # it will allow to avoid MemoryError of numpy for big files
-#         # bit_version = platform.architecture()[0]
-#         # if bit_version == '64bit':
-#         #     nlines = -1
-#         # else:
-#         nlines = 1000
-#
-#         # skip header
-#         if self.file.tell() == 0:
-#             self.file.readline()
-#
-#         lines = []
-#
-#         if nlines == -1:
-#
-#             lines = [line.strip().split('\t') for line in self.file]
-#
-#         elif nlines > 0:
-#
-#             # read first nlines of available and additional lines containing fragments ('#' symbol in molname)
-#
-#             i = 0
-#             while True:
-#                 line = self.file.readline()
-#                 if not line:
-#                     break
-#                 lines.append(line.strip().split('\t'))
-#                 i += 1
-#                 if i >= nlines:
-#                     break
-#
-#             # read next lines until meet a new molecule
-#             if lines:
-#                 while True:
-#                     cur_mol = lines[-1][0].split("#")[0]
-#                     cur_pos = self.file.tell()
-#                     line = self.file.readline()
-#                     if not line:
-#                         break
-#                     if line.split('\t', 1)[0].split('#')[0] == cur_mol:
-#                         lines.append(line.strip().split('\t'))
-#                     else:
-#                         self.file.seek(cur_pos)
-#                         break
-#
-#         mol_names = []
-#         x = []
-#         for line in lines:
-#             mol_names.append(line[0])
-#             x.append(tuple(map(float, line[1:])))
-#
-#         # add read frag names to the list (remain only mol name and frag name, e.g. mol1#frag1, not mol1#frag1#1)
-#         if not self._is_frag_full_names_read:
-#             self.frag_full_names.extend(['#'.join(mol_name.split('#')[0:2]) for mol_name in mol_names if mol_name.find('#') > -1])
-#
-#         if not self._is_frag_full_names_read and (len(mol_names) < nlines or nlines == -1):
-#             self._is_frag_full_names_read = True
-#
-#         return mol_names, np.asarray(x)
-
-
 def predict(x, model, model_name, model_type):
 
     pred = None
@@ -165,7 +90,7 @@ def predict(x, model, model_name, model_type):
     return pred
 
 
-def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred):
+def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format):
 
     if save_pred:
         save_pred_fname = os.path.splitext(out_fname)[0] + "_pred.txt"
@@ -173,7 +98,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
             print("File with prediction was erased.")
             os.remove(save_pred_fname)
 
-    sirms_file = SirmsFile(x_fname, frag_file=True, chunks=1000)
+    sirms_file = SirmsFile(x_fname, file_format=input_format, frag_file=True, chunks=1000)
 
     # scale
     if os.path.isfile(os.path.join(model_dir, "scale.pkl")):
@@ -230,7 +155,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
                             for k, v in train_pred.items():
                                 f.write(k + "\t" + model_name + "\t" + prop_name + "\t" + str(v) + "\n")
                             for m_name, f_name, pred_value in zip(x_frag_mol_names, x_frag_frag_names, frag_pred):
-                                f.write(m_name + "#" + f_name + "\t" + model_name + "\t" + prop_name + "\t" + str(pred_value) + "\n")
+                                f.write(m_name + mol_frag_sep + f_name + "\t" + model_name + "\t" + prop_name + "\t" + str(pred_value) + "\n")
 
                 mol_names, var_names, x = sirms_file.read_next()
 
@@ -263,6 +188,10 @@ def main():
     parser = argparse.ArgumentParser(description='Calculate contributions of molecular fragments based on QSAR models.')
     parser.add_argument('-i', '--input', metavar='frag_descriptors.txt', required=True,
                         help='input text file with descriptors for compounds with removed fragments.')
+    parser.add_argument('-f', '--input_format', metavar='txt', default='txt',
+                        help='format of input file with descriptors for compounds with removed fragments (txt|svm). '
+                             'Svm sparse format file ha to have two files with the same name and extensions '
+                             'rownames and colnames. Default: txt.')
     parser.add_argument('-o', '--output', metavar='contributions.txt', required=True,
                         help='output text file with fragments contributions.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svr pls knn]', required=True, nargs='*',
@@ -289,8 +218,12 @@ def main():
         if o == "model_type": model_type = v
         if o == "verbose": verbose = v
         if o == "save_intermediate_prediction": save_pred = v
+        if o == "input_format": input_format = v
+        if input_format not in ['txt', 'svm']:
+            print("Wrong input file format - %s. Only txt and svm file formats are allowed." % input_format)
+            exit()
 
-    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred)
+    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format)
 
 
 if __name__ == '__main__':

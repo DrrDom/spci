@@ -327,7 +327,10 @@ class Tab_1(ttk.Frame):
                           opt_verbose=True,
                           opt_noH=True,
                           frag_fname=None,
-                          parse_stereo=False)
+                          parse_stereo=False,
+                          output_format='svm',
+                          quasimix=False,
+                          id_field_name=None)
 
         # remove models dir
         if os.path.isdir(os.path.join(os.path.dirname(x_fname), "models")):
@@ -340,7 +343,8 @@ class Tab_1(ttk.Frame):
                           ncores=max(1, cpu_count() - 1),
                           model_type=self.models_frame.model_type.get(),
                           verbose=1,
-                          cv_predictions=True)
+                          cv_predictions=True,
+                          input_format='svm')
 
         # update list of models to plot
         self.master.children['tab_3']._show_models_list()
@@ -528,7 +532,10 @@ class Tab_2(ttk.Frame):
                           opt_verbose=True,
                           opt_noH=True,
                           frag_fname=ids_fname,
-                          parse_stereo=False)
+                          parse_stereo=False,
+                          output_format='svm',
+                          quasimix=False,
+                          id_field_name=None)
 
         # calc contributions
         out_fname = os.path.join(os.path.dirname(sdf_fname), self.frags_choice.get() + '_frag_contributions.txt')
@@ -547,7 +554,8 @@ class Tab_2(ttk.Frame):
                                       prop_names=prop_name,
                                       model_type=self.master.children['tab_1'].models_frame.model_type.get(),
                                       verbose=True,
-                                      save_pred=True)
+                                      save_pred=True,
+                                      input_format='svm')
 
         print("Calculation completed.")
 

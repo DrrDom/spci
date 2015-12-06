@@ -25,9 +25,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn import svm
 from sklearn.metrics import make_scorer
 from multiprocessing import cpu_count
+from scipy.sparse import dok_matrix
 
 
-def load_sirms(fname):
+def load_sirms_txt(fname):
     with open(fname) as f:
         descr_names = f.readline().strip().split("\t")[1:]
         case_names = []
@@ -37,6 +38,19 @@ def load_sirms(fname):
             case_names.append(tmp[0])
             x.append(tuple(map(float, tmp[1:])))
     return descr_names, case_names, np.asarray(x)
+
+
+def load_sirms_svm(fname):
+    descr_names = [v.strip() for v in open(os.path.splitext(fname)[0] + '.colnames').readlines()]
+    case_names = [v.strip() for v in open(os.path.splitext(fname)[0] + '.rownames').readlines()]
+    x = dok_matrix((len(case_names), len(descr_names)), dtype=np.float32)
+    with open(fname) as f:
+        for row, line in enumerate(f):
+            tmp = line.strip().split(' ')
+            for v in tmp:
+                col, value = v.split(':')
+                x[row, int(col)] = value
+    return descr_names, case_names, x.toarray()
 
 
 def load_y(fname):
@@ -133,7 +147,7 @@ def save_model_stat_2(model_name, file_name, model_params, y, pred, model_type, 
     open(file_name, "wt").writelines(lines)
 
 
-def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions):
+def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions, input_format):
 
     seed = 42
 
@@ -145,7 +159,11 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
     model_stat_fname = os.path.join(model_dir, "models_stat.txt")
 
     # load x and scale
-    descr_names, mol_names, x = load_sirms(x_fname)
+    if input_format == 'txt':
+        descr_names, mol_names, x = load_sirms_txt(x_fname)
+    elif input_format == 'svm':
+        descr_names, mol_names, x = load_sirms_svm(x_fname)
+
     scale = StandardScaler().fit(x)
     save_object(scale, os.path.join(model_dir, "scale.pkl"))
     x = scale.transform(x)
@@ -282,15 +300,19 @@ def main():
 
     parser = argparse.ArgumentParser(description='Build QSAR/QSPR models.')
     parser.add_argument('-x', '--descriptors', metavar='descriptors.txt', required=True,
-                        help='input text file with descriptors')
+                        help='input file with descriptors in txt or svm formats.')
+    parser.add_argument('-f', '--descriptors_format', metavar='txt', default='txt',
+                        help='format of the input file with descriptors (txt|svm). Svm file has to have two '
+                             'supplementary files with the same name and extensions rownames and colnames. '
+                             'Default txt.')
     parser.add_argument('-y', '--property', metavar='property.txt', required=True,
-                        help='input text file with property/activity values')
+                        help='input text file with property/activity values.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svm pls knn]', default=['rf'], nargs='*',
-                        help='models to build')
+                        help='models to build.')
     parser.add_argument('-c', '--ncores', metavar='1|2|3|...|all', default=str(cpu_count() - 1),
                         help='number of cores used for models building. Default: all cores - 1.')
     parser.add_argument('-t', '--model_type', metavar='reg|class', default='reg',
-                        help='models type: reg for regression and class for classification')
+                        help='models type: reg for regression and class for classification.')
     parser.add_argument('-v', '--verbose', default=1,
                         help='Integer value. 0 - print no details. 1 and more - verbose output. Default: 1.')
     parser.add_argument('-p', '--cv_predictions', action='store_true', default=True,
@@ -311,9 +333,12 @@ def main():
         if o == "model_type": model_type = v
         if o == "verbose": verbose = int(v)
         if o == "cv_predictions": cv_predictions = v
+        if o == "descriptors_format": input_format = v
+        if input_format not in ['txt', 'svm']:
+            print("Input file format is wrong - %s. Only txt and svm are allowed." % input_format)
+            exit()
 
-
-    main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions)
+    main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions, input_format)
 
 
 if __name__ == '__main__':

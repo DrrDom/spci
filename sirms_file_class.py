@@ -7,32 +7,68 @@
 # license         : GPL3
 #==============================================================================
 
+import os
 import numpy as np
+from scipy.sparse import dok_matrix
+
 
 mol_frag_sep = "###"
 
+
 class SirmsFile():
 
-    def __init__(self, fname, frag_file=False, chunks=float("Inf")):
-        self.__varnames = open(fname).readline().strip().split('\t')[1:]
+    def __init__(self, fname, file_format='txt', frag_file=False, chunks=float("Inf")):
+
+        if file_format == 'txt':
+            self.__varnames = open(fname).readline().strip().split('\t')[1:]
+            self.__frag_full_names = []          # keep the names of all fragments which were read
+                                                 # order is important since calculated contributions are saved in
+                                                 # the same order (mol1###frag1, ...) (not mol1###frag1#1)
+            self.__is_frag_full_names_read = False
+
+        elif file_format == 'svm':
+            self.__varnames = [v.strip() for v in open(os.path.splitext(fname)[0] + '.colnames').readlines()]
+            self.__mol_full_names = [v.strip() for v in open(os.path.splitext(fname)[0] + '.rownames').readlines()]
+            self.__frag_full_names = [v.rsplit('#', 1)[0] for v in self.__mol_full_names if v.find(mol_frag_sep) > -1]
+            self.__is_frag_full_names_read = True
+
         self.__file = open(fname)
-        self.__frag_full_names = []          # keep the names of all fragments which were read
-                                             # order is important since calculated contributions are saved in
-                                             # the same order
-        self.__is_frag_full_names_read = False
+        self.__file_format = file_format
         self.__nlines = chunks               # file is read by chunks to avoid memory problems,
                                              # to read the whole file at once set to float('Inf')
         self.__is_frag_file = frag_file      # set which file to read ordinary (False) or with fragments (True)
                                              # in the latter case each chunk will contain all fragments for each
                                              # read molecules (another reading process)
+        self.__cur_mol_read = 0              # number of mol already read
 
     def get_frag_full_names(self):
         return self.__frag_full_names
 
     def reset_read(self):
+        self.__cur_mol_read = 0
         self.__file.seek(0)
 
-    def read_next(self):
+    def __read_svm_next(self):
+        start = self.__cur_mol_read
+        end = start + self.__nlines
+        if end > len(self.__mol_full_names):
+            end = len(self.__mol_full_names)
+        cur_mol = self.__mol_full_names[end - 1].split(mol_frag_sep)[0]
+        end += 1
+        while end < len(self.__mol_full_names) and self.__mol_full_names[end - 1].split(mol_frag_sep)[0] == cur_mol:
+            end += 1
+        end -= 2
+        lines = [self.__file.readline().strip() for _ in range(start, end + 1)]
+        x = dok_matrix((end - start + 1, len(self.__varnames)), dtype=np.float32)
+        for row, line in enumerate(lines):
+            tmp = line.split(' ')
+            for v in tmp:
+                col, value = v.split(':')
+                x[row, int(col)] = value
+        self.__cur_mol_read = end + 1
+        return self.__mol_full_names[start:end + 1], self.__varnames, x.toarray()
+
+    def __read_txt_next(self):
 
         # skip header
         if self.__file.tell() == 0:
@@ -80,3 +116,9 @@ class SirmsFile():
             self.__is_frag_full_names_read = True
 
         return mol_names, self.__varnames, np.asarray(x)
+
+    def read_next(self):
+        if self.__file_format == 'txt':
+            return self.__read_txt_next()
+        elif self.__file_format == 'svm':
+            return self.__read_svm_next()
