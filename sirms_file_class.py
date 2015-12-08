@@ -9,7 +9,6 @@
 
 import os
 import numpy as np
-from scipy.sparse import dok_matrix
 
 
 mol_frag_sep = "###"
@@ -59,14 +58,16 @@ class SirmsFile():
             end += 1
         end -= 2
         lines = [self.__file.readline().strip() for _ in range(start, end + 1)]
-        x = dok_matrix((end - start + 1, len(self.__varnames)), dtype=np.float32)
-        for row, line in enumerate(lines):
-            tmp = line.split(' ')
-            for v in tmp:
-                col, value = v.split(':')
-                x[row, int(col)] = value
+        x = []
+        for line in lines:
+            out = [0] * len(self.__varnames)
+            for entry in line.split():
+                index, value = entry.split(':')
+                out[int(index)] = float(value)
+            x.append(out)
+        x = np.asarray(x)
         self.__cur_mol_read = end + 1
-        return self.__mol_full_names[start:end + 1], self.__varnames, x.toarray()
+        return self.__mol_full_names[start:end + 1], self.__varnames, x
 
     def __read_txt_next(self):
 

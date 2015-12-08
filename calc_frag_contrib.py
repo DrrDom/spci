@@ -13,7 +13,7 @@ import argparse
 import platform
 import numpy as np
 from sklearn.externals import joblib
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from sirms_file_class import SirmsFile
 
@@ -106,7 +106,8 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     else:
         scale = None
 
-    frag_contrib = dict()
+    # frag_contrib = dict()
+    frag_contrib = OrderedDict()
 
     if model_type == 'reg' or model_type == 'class':
 
