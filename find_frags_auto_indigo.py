@@ -48,7 +48,7 @@ def fix_cansmi_attach_point(smi):
     output = p[0]
     for i in p[1:]:
         att = i.split('%')
-        output = output.replace('%' + att[1], att[0])
+        output = output.replace('%' + att[1], "(" + att[0] + ")")
     return output
 
 
@@ -83,7 +83,7 @@ def filter_dupl(frag_list):
     return [[v, list(k)] for k, v in res.items()]
 
 
-def fragment_mol(mol, query):
+def fragment_mol(mol, query, max_cuts):
     # returns list of lists: [['F', [0]], ['C#N', [3, 4]], ... ]
 
     # modify representation of NO2 groups to charged version
@@ -100,32 +100,35 @@ def fragment_mol(mol, query):
                 ids.append(match.mapAtom(atom).index())
         all_cuts.append(ids)
 
-    for cut in all_cuts:
-        output.extend(frag_mol_by_cuts(mol.clone(), [cut]))
+    for i in range(1, max_cuts + 1):
 
-    for comb in combinations(all_cuts, 2):
-        output.extend(frag_mol_by_cuts(mol.clone(), comb))
+        for comb in combinations(all_cuts, i):
+            output.extend(frag_mol_by_cuts(mol.clone(), comb))
 
-    for comb in combinations(all_cuts, 3):
-        output.extend(frag_mol_by_cuts(mol.clone(), comb))
+        # for cut in all_cuts:
+        #     output.extend(frag_mol_by_cuts(mol.clone(), [cut]))
+        #
+        # for comb in combinations(all_cuts, 2):
+        #     output.extend(frag_mol_by_cuts(mol.clone(), comb))
+        #
+        # for comb in combinations(all_cuts, 3):
+        #     output.extend(frag_mol_by_cuts(mol.clone(), comb))
 
     output = filter_dupl(output)
 
     return output
 
 
-def main_params(in_sdf, out_txt, verbose, error_fname):
+def main_params(in_sdf, out_txt, query, max_cuts, verbose, error_fname):
 
-    query = indigo.loadSmarts("[#6+0;!$(*=,#[!#6])]!@!=!#[*]")
-    # mol = indigo.loadMolecule("FCC(CC1CCCC(C1)C1=CC=NC2=C1C=C(Cl)C(F)=C2)C1=CC=CC=C1")
-    # mol = indigo.loadMolecule("FCC(CC1CC(CC(C1)n(:[o]):[o])C1=CC=NC2=C1C=C(Cl)C(F)=C2)C1=CC=CC=C1")
+    query = indigo.loadSmarts(query)
 
     with open(out_txt, 'wt') as f:
         for mol in indigo.iterateSDFile(in_sdf):
             try:
                 if verbose:
                     print(mol.name() + ' is processing')
-                res = fragment_mol(mol, query)
+                res = fragment_mol(mol, query, max_cuts)
                 for item in res:
                     ids = [i + 1 for i in item[1]]
                     f.write(mol.name() + '\t' + item[0] + '\t' + '\t'.join(map(str, ids)) + '\n')
@@ -133,7 +136,8 @@ def main_params(in_sdf, out_txt, verbose, error_fname):
                 print('%s was skipped due to error' % mol.name())
                 print(e)
                 with open(error_fname, 'at') as f_err:
-                    f_err.write('%s\t%s\t%s\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), mol.name(), e))
+                    f_err.write('%s\t%s\t%s\t%s\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                                      os.path.basename(__file__), mol.name(), e))
 
 
 def main():
@@ -145,24 +149,27 @@ def main():
     parser.add_argument('-o', '--out', metavar='output.txt', required=True,
                         help='output text file; each line contains tab-separated fields: name of a molecule, '
                              'name of a fragment and list of corresponding atom numbers.')
+    parser.add_argument('-q', '--query', metavar='smarts', default='[#6+0;!$(*=,#[!#6])]!@!=!#[*]',
+                        help='SMARTS string to match bonds to cleave. Default: [#6+0;!$(*=,#[!#6])]!@!=!#[*]')
+    parser.add_argument('-u', '--upper_cuts_number', metavar='integer', default=3,
+                        help='maximal number of bonds cleaved simultaneously. Default: 3')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='show progress on the screen.')
-    parser.add_argument('-e', '--error_file', metavar='log_file_name.txt', default="frags_auto_errors.txt",
+    parser.add_argument('-e', '--error_file', metavar='log_file_name.txt', default="indigo_errors.txt",
                         help='save names of molecules which cause error to a text log file. Default file name '
-                             'frags_auto_errors.txt.')
-    # parser.add_argument('-a', '--attach_hydrogens', action='store_true', default=True,
-    #                     help='automatically attach hydrogen atoms to found fragments.')
+                             'indigo_errors.txt.')
 
 
     args = vars(parser.parse_args())
     for o, v in args.items():
         if o == "in": in_sdf = v
         if o == "out": out_txt = v
+        if o == "query": query = v
+        if o =="upper_cuts_number": max_cuts = v
         if o == "verbose": verbose = v
         if o == "error_file": error_fname = v
-        # if o == "attach_hydrogens": add_h = v
 
-    main_params(in_sdf, out_txt, verbose, error_fname)
+    main_params(in_sdf, out_txt, query, max_cuts, verbose, error_fname)
 
 
 if __name__ == '__main__':

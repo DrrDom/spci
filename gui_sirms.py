@@ -497,22 +497,24 @@ class Tab_2(ttk.Frame):
                                    in_frags=frag_fname,
                                    remove_all=False,
                                    verbose=True,
-                                   error_mol=True)
+                                   error_fname=os.path.join(wd, "indigo_errors.log"))
         elif self.frags_choice.get() == 'rings':
             find_rings.main_params(in_sdf=sdf_fname,
                                    out_txt=ids_fname,
                                    verbose=True,
-                                   error_mol=True)
+                                   error_fname=os.path.join(wd, "indigo_errors.log"))
         elif self.frags_choice.get() == 'murcko':
             find_murcko.main_params(in_sdf=sdf_fname,
                                     out_txt=ids_fname,
                                     verbose=True,
-                                    error_mol=True)
+                                    error_fname=os.path.join(wd, "indigo_errors.log"))
         elif self.frags_choice.get() == 'auto':
             find_frags_auto.main_params(in_sdf=sdf_fname,
                                         out_txt=ids_fname,
+                                        query='[#6+0;!$(*=,#[!#6])]!@!=!#[*]',
+                                        max_cuts=3,
                                         verbose=True,
-                                        error_fname=os.path.join(wd, "errors_frags_auto.txt"))
+                                        error_fname=os.path.join(wd, "indigo_errors.log"))
 
         # calc sirms descriptors
         if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':

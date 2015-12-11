@@ -9,7 +9,7 @@
 
 import os
 import argparse
-
+from datetime import datetime
 from indigo import Indigo, IndigoException
 
 
@@ -24,12 +24,7 @@ def add_atoms(atom, remove_atoms):
             add_atoms(a, remove_atoms)
 
 
-def main_params(in_sdf, out_txt, verbose, error_mol):
-
-    if error_mol:
-        error_log_file = os.path.join(os.path.dirname(out_txt), 'indigo_errors.log')
-        if os.path.isfile(error_log_file):
-            os.remove(error_log_file)
+def main_params(in_sdf, out_txt, verbose, error_fname):
 
     with open(out_txt, "wt") as f:
 
@@ -61,10 +56,9 @@ def main_params(in_sdf, out_txt, verbose, error_mol):
 
                 print('%s was skipped due to error' % mol.name())
                 print(e)
-
-                if error_mol:
-                    with open(error_log_file, 'at') as f_err:
-                        f_err.write('%s\t%s\n' % (mol.name(), e))
+                with open(error_fname, 'at') as f_err:
+                    f_err.write('%s\t%s\t%s\t%s\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                                      os.path.basename(__file__), mol.name(), e))
 
 
 
@@ -79,17 +73,18 @@ def main():
                              'name of a fragment and list of corresponding atom numbers.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='show progress on the screen.')
-    parser.add_argument('-e', '--error_mol', action='store_true', default=True,
-                        help='save molecules which cause error to a text log file named indigo_errors.log.')
+    parser.add_argument('-e', '--error_file', metavar='log_file_name.txt', default="indigo_errors.txt",
+                        help='save names of molecules which cause error to a text log file. Default file name '
+                             'indigo_errors.txt.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():
         if o == "in": in_sdf = v
         if o == "out": out_txt = v
         if o == "verbose": verbose = v
-        if o == "error_mol": error_mol = v
+        if o == "error_file": error_fname = v
 
-    main_params(in_sdf, out_txt, verbose, error_mol)
+    main_params(in_sdf, out_txt, verbose, error_fname)
 
 
 if __name__ == '__main__':
