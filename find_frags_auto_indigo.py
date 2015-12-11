@@ -117,8 +117,6 @@ def fragment_mol(mol, query):
 def main_params(in_sdf, out_txt, verbose, error_fname):
 
     query = indigo.loadSmarts("[#6+0;!$(*=,#[!#6])]!@!=!#[*]")
-    # mol = indigo.loadMolecule("FCC(CC1CCCC(C1)C1=CC=NC2=C1C=C(Cl)C(F)=C2)C1=CC=CC=C1")
-    # mol = indigo.loadMolecule("FCC(CC1CC(CC(C1)n(:[o]):[o])C1=CC=NC2=C1C=C(Cl)C(F)=C2)C1=CC=CC=C1")
 
     with open(out_txt, 'wt') as f:
         for mol in indigo.iterateSDFile(in_sdf):
@@ -133,7 +131,8 @@ def main_params(in_sdf, out_txt, verbose, error_fname):
                 print('%s was skipped due to error' % mol.name())
                 print(e)
                 with open(error_fname, 'at') as f_err:
-                    f_err.write('%s\t%s\t%s\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), mol.name(), e))
+                    f_err.write('%s\t%s\t%s\t%s\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                                      os.path.basename(__file__), mol.name(), e))
 
 
 def main():
@@ -147,11 +146,9 @@ def main():
                              'name of a fragment and list of corresponding atom numbers.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='show progress on the screen.')
-    parser.add_argument('-e', '--error_file', metavar='log_file_name.txt', default="frags_auto_errors.txt",
+    parser.add_argument('-e', '--error_file', metavar='log_file_name.txt', default="indigo_errors.txt",
                         help='save names of molecules which cause error to a text log file. Default file name '
-                             'frags_auto_errors.txt.')
-    # parser.add_argument('-a', '--attach_hydrogens', action='store_true', default=True,
-    #                     help='automatically attach hydrogen atoms to found fragments.')
+                             'indigo_errors.txt.')
 
 
     args = vars(parser.parse_args())
@@ -160,7 +157,6 @@ def main():
         if o == "out": out_txt = v
         if o == "verbose": verbose = v
         if o == "error_file": error_fname = v
-        # if o == "attach_hydrogens": add_h = v
 
     main_params(in_sdf, out_txt, verbose, error_fname)
 
