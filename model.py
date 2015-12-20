@@ -174,8 +174,6 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
 
     cv5 = cv.KFold(n=len(y), n_folds=5, random_state=42, shuffle=True)
 
-    cv_pred = np.copy(y)
-
     # build models
 
     for current_model in model_names:
@@ -281,19 +279,17 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
 
         # save cv predictions
         if cv_predictions:
-            cv_pred = np.vstack((cv_pred, pred))
+            # cv_pred = np.copy(y)
+            cv_pred = np.vstack((np.copy(y), pred))
+            np.savetxt(os.path.join(model_dir, current_model + "_cv_pred.txt"),
+                       np.column_stack([mol_names, np.round(np.transpose(cv_pred), 3)]),
+                       fmt="%s",
+                       delimiter="\t",
+                       comments="",
+                       header="Mol\tObs\t" + "\t" + current_model)
 
         if verbose:
             print(current_model.upper() + ' model was built\n')
-
-    # save CV predictions
-    if cv_predictions:
-        np.savetxt(os.path.join(model_dir, "models_cv_pred.txt"),
-                   np.column_stack([mol_names, np.round(np.transpose(cv_pred), 3)]),
-                   fmt="%s",
-                   delimiter="\t",
-                   comments="",
-                   header="Mol\tObs\t" + "\t".join(model_names))
 
 
 def main():
@@ -316,7 +312,8 @@ def main():
     parser.add_argument('-v', '--verbose', default=1,
                         help='Integer value. 0 - print no details. 1 and more - verbose output. Default: 1.')
     parser.add_argument('-p', '--cv_predictions', action='store_true', default=True,
-                        help='True/False to output cross-validation predictions.')
+                        help='True/False to save cross-validation predictions in text files along '
+                             'with model files.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():

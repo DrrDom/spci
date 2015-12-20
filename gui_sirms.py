@@ -445,7 +445,7 @@ class Tab_1(ttk.Frame):
         ttk.Entry(frame, width=70, textvariable=self.property_file_path).grid(column=0, row=7, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
         ttk.Button(frame, text='Browse...', command=self.__select_property_file_path).grid(column=1, row=7, sticky=(tk.W), padx=5, pady=(0, 5))
 
-        self.models_frame = ModelsFrame(self, 'Models', 0, 10, False)
+        self.models_frame = ModelsFrame(self, 'Models', 0, 10, True)
 
         buttons_frame = ttk.Frame(self)
         buttons_frame.grid(column=0, row=20, columnspan=3, sticky=(tk.W, tk.E))
