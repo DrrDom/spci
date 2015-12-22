@@ -147,6 +147,20 @@ class StatWindow(tk.Toplevel):
         self.configure(width=600, height=150)
 
 
+class SpinboxCPUFrame(ttk.Labelframe):
+
+    def __init__(self, parent, column, row, name="Number of cores to use"):
+
+        ttk.Labelframe.__init__(self, parent, text=name)
+        self.grid(column=column, row=row, columnspan=10, sticky=(tk.W, tk.E), padx=5, pady=5)
+
+        self._value = tk.StringVar(value=str(cpu_count()-1))
+        tk.Spinbox(self, from_=1, to=cpu_count(), textvariable=self._value, width=5).grid(column=0, row=2, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+
+    def get_value(self):
+        return int(self._value.get())
+
+
 class ModelsFrame(ttk.Labelframe):
 
     def __init__(self, parent, name, column, row, full_version=True):
@@ -170,6 +184,7 @@ class ModelsFrame(ttk.Labelframe):
         self.model_knn_class = tk.BooleanVar(value=False)
 
         ttk.Radiobutton(self, text='Regression (RF, GBM, SVM, PLS)', name='model_type_reg', value='reg', variable=self.model_type).grid(column=0, row=0, sticky=(tk.W), padx=5, pady=5)
+        ttk.Radiobutton(self, text='Binary classification (0-1) (RF, GBM, SVM)', name='model_type_class', value='class', variable=self.model_type).grid(column=1, row=0, sticky=(tk.W), padx=5, pady=5)
 
         if self._full_version:
 
@@ -179,14 +194,10 @@ class ModelsFrame(ttk.Labelframe):
             ttk.Checkbutton(self, variable=self.model_pls, name='chk_pls', text='Partial least squares (PLS)', command=self.reg_model_checked).grid(column=0, row=4, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
             ttk.Checkbutton(self, variable=self.model_knn, name='chk_knn', text='k-Nearest neighbors (kNN)', command=self.reg_model_checked).grid(column=0, row=5, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
 
-            ttk.Radiobutton(self, text='Binary classification (0-1) (RF, GBM, SVM)', name='model_type_class', value='class', variable=self.model_type).grid(column=1, row=0, sticky=(tk.W), padx=5, pady=5)
             ttk.Checkbutton(self, variable=self.model_rf_class, name='chk_rf_class', text='Random Forest (RF)', command=self.class_model_checked).grid(column=1, row=1, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
             ttk.Checkbutton(self, variable=self.model_svm_class, name='chk_svr_class', text='Support vector classification (SVC)', command=self.class_model_checked).grid(column=1, row=2, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
             ttk.Checkbutton(self, variable=self.model_gbm_class, name='chk_gbm_class', text='Gradient boosting classification (GBC)', command=self.class_model_checked).grid(column=1, row=3, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
             ttk.Checkbutton(self, variable=self.model_knn_class, name='chk_knn_class', text='k-Nearest neighbors (kNN)', command=self.class_model_checked).grid(column=1, row=4, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
-
-        else:
-            ttk.Radiobutton(self, text='Binary classification (0-1) (RF, GBM, SVM)', name='model_type_class', value='class', variable=self.model_type).grid(column=0, row=1, sticky=(tk.W), padx=5, pady=5)
 
         self.columnconfigure(0, pad=80)
 
@@ -340,7 +351,8 @@ class Tab_1(ttk.Frame):
         model.main_params(x_fname=x_fname,
                           y_fname=self.property_file_path.get(),
                           model_names=self.models_frame.get_selected_models(),
-                          ncores=max(1, cpu_count() - 1),
+                          ncores=self.sb_cpu_count.get_value(),
+                          # ncores=max(1, cpu_count() - 1),
                           model_type=self.models_frame.model_type.get(),
                           verbose=1,
                           cv_predictions=True,
@@ -446,6 +458,8 @@ class Tab_1(ttk.Frame):
         ttk.Button(frame, text='Browse...', command=self.__select_property_file_path).grid(column=1, row=7, sticky=(tk.W), padx=5, pady=(0, 5))
 
         self.models_frame = ModelsFrame(self, 'Models', 0, 10, True)
+
+        self.sb_cpu_count = SpinboxCPUFrame(self, 0, 12)
 
         buttons_frame = ttk.Frame(self)
         buttons_frame.grid(column=0, row=20, columnspan=3, sticky=(tk.W, tk.E))
