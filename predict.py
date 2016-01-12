@@ -116,17 +116,18 @@ def main():
                         help='input text file with descriptors for compounds with removed fragments.')
     parser.add_argument('-o', '--output', metavar='predictions.txt', required=True,
                         help='output text file with fragments contributions.')
-    parser.add_argument('-r', '--training_set', metavar='training_set_descriptors.txt', required=True,
-                        help='text file with descriptors of training set compounds.')
+    parser.add_argument('-r', '--training_set', metavar='training_set_descriptors.txt', required=False,
+                        help='text file with descriptors of training set compounds where variable names are stored and '
+                             'which can be required for calculation of some applicability domain measures.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svr pls knn]', required=True, nargs='*',
                         help='file name of saved models (without extension).')
     parser.add_argument('-d', '--models_dir', metavar='path_to_models', required=True,
                         help='path to stored model files. The file scale.pkl must be in that dir also.')
     parser.add_argument('-t', '--model_type', metavar='reg|class', default='reg',
                         help='models type: reg for regression and class for classification')
-    parser.add_argument('-a', '--applicability_domain', metavar='name', required=True, nargs='*',
+    parser.add_argument('-a', '--applicability_domain', metavar='name', required=False, nargs='*', default=None,
                         help='name(s) of applicability domain(s) to apply. If several - provide a space separated '
-                             'list. Default: all')
+                             'list. Default: none')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='show progress on the screen.')
 
