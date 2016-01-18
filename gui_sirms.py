@@ -249,6 +249,24 @@ class Tab_1(ttk.Frame):
         self.property_file_path.set(filedialog.askopenfilename(filetypes=[('Property text file', '*.txt')],
                                                                initialdir=os.path.dirname(self.sdf_path.get())))
 
+    def __remove_forbidden_y(self, filename):
+        # remove non-numeric items from y file (with compounds properties)
+
+        def is_number(s):
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+
+        lines = open(filename).readlines()
+        # add header to the output
+        output = [lines[0]]
+        for line in lines[1:]:
+            if is_number(line.strip().split('\t')[1]):
+                output.append(line)
+        open(filename, 'wt').writelines(output)
+
     def __build_models(self):
 
         if self.sdf_path.get() == '':
@@ -306,7 +324,7 @@ class Tab_1(ttk.Frame):
                 os.remove(output_sdf)
             os.rename(tmp_sdf, output_sdf)
 
-        # extract property and save to separate file
+        # extract property, check for numeric values and save to separate file
         if self.property_field_name.get() != '':
             property_filename = os.path.join(os.path.dirname(self.sdf_path.get()),
                                              self.property_field_name.get().strip() + '.txt')
@@ -315,6 +333,7 @@ class Tab_1(ttk.Frame):
                                    title=True,
                                    field_names=[self.property_field_name.get().strip()],
                                    all_fields=False)
+            self.__remove_forbidden_y(property_filename)
             self.property_file_path.set(property_filename)
 
         # copy setup.txt to folder with sdf file

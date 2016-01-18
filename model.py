@@ -168,8 +168,13 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
     save_object(scale, os.path.join(model_dir, "scale.pkl"))
     x = scale.transform(x)
 
-    # load y and sort y values according to x rows
+    # load y
     y = load_y(y_fname)
+
+    # get indices of missing y values and remove these cases from x, y and mol_names
+    ids = [i for i, n in enumerate(mol_names) if n not in y.keys()]
+    x = np.delete(x, ids, 0)
+    mol_names = [n for i, n in enumerate(mol_names) if i not in ids]
     y = np.asarray([y[n] for n in mol_names])
 
     cv5 = cv.KFold(n=len(y), n_folds=5, random_state=42, shuffle=True)
