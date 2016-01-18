@@ -384,6 +384,31 @@ class Tab_1(ttk.Frame):
         win = StatWindow(self)
         win.fill_data(os.path.join(os.path.dirname(self.sdf_path.get()), 'models\\models_stat.txt'))
 
+    def __add_sdf_path_to_history(self, sdf_path):
+        if sdf_path is None or sdf_path == "":
+            return None
+        max_lines = 10
+        new_line = sdf_path + '\n'
+        hist = os.path.join(get_script_path(), 'history.txt')
+        if os.path.isfile(hist):
+            lines = open(hist).readlines()
+            # remove newly added line if it is present in lines
+            if new_line in lines:
+                lines.remove(new_line)
+            # keep only allowed number of lines - 1
+            if len(lines) >= max_lines:
+                lines = lines[-(max_lines-1):]
+            lines.append(new_line)
+            open(hist, 'wt').writelines(lines)
+        else:
+            open(hist, 'wt').write(new_line)
+
+    def __read_sdf_history(self):
+        lines = open(os.path.join(get_script_path(), 'history.txt')).readlines()
+        lines = [line.strip() for line in lines]
+        lines.reverse()
+        return lines
+
     def __sdf_path_changed(self, varname, elementname, mode):
         field_names = self.__read_sdf_field_names(self.sdf_path.get())
         if field_names:
@@ -391,6 +416,8 @@ class Tab_1(ttk.Frame):
             self.children['sdf_label_frame'].children['property_field_name'].set(value=field_names[0])
             self.children['optional_label_frame'].children['inner_frame'].children['sdf_id_field_name'].configure(values=field_names)
             self.children['optional_label_frame'].children['inner_frame'].children['sdf_id_field_name'].set(value=field_names[0])
+        self.__add_sdf_path_to_history(self.sdf_path.get())
+        self.children['sdf_label_frame'].children['sdf_path_combobox'].configure(values=self.__read_sdf_history())
         # update list of models to plot
         self.master.children['tab_3']._show_models_list()
 
@@ -454,7 +481,8 @@ class Tab_1(ttk.Frame):
         frame.grid(column=0, row=2, sticky=(tk.E, tk.W), columnspan=4, padx=5, pady=5)
         ttk.Label(frame, text='Path to SDF-file').grid(column=0, row=2, sticky=(tk.W, tk.S), padx=5)
         ttk.Label(frame, text='property field name').grid(column=2, row=2, sticky=(tk.W), padx=5)
-        ttk.Entry(frame, width=70, textvariable=self.sdf_path).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
+        # ttk.Entry(frame, width=70, textvariable=self.sdf_path).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
+        ttk.Combobox(frame, name='sdf_path_combobox', width=70, textvariable=self.sdf_path, values=self.__read_sdf_history()).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
         ttk.Button(frame, text='Browse...', command=self.__select_sdf_path).grid(column=1, row=3, sticky=(tk.W), padx=5, pady=(0, 5))
         ttk.Combobox(frame, name='property_field_name', width=20, textvariable=self.property_field_name, state='readonly').grid(column=2, row=3, sticky=(tk.W), padx=5, pady=(0, 5))
 

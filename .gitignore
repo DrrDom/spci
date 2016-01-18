@@ -4,3 +4,4 @@ tests
 manual/*.docx
 batch
 output_zip
+history.txt
