@@ -33,6 +33,7 @@ import find_frags_auto_indigo as find_frags_auto
 import calc_frag_contrib
 import plot_contributions
 import extractsdf
+import filter_descriptors
 
 sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
 import sirms
@@ -353,6 +354,11 @@ class Tab_1(ttk.Frame):
                               output_format='svm',
                               quasimix=False,
                               id_field_name=None)
+
+            # filter sirms descriptors
+            filter_descriptors.main_params(in_fname=x_fname,
+                                           out_fname=x_fname,
+                                           input_format='svm')
 
         else:
             x_fname = os.path.join(os.path.dirname(self.sdf_path.get()), 'x.txt')
