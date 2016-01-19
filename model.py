@@ -147,16 +147,17 @@ def save_model_stat_2(model_name, file_name, model_params, y, pred, model_type, 
     open(file_name, "wt").writelines(lines)
 
 
-def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions, input_format):
+def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, verbose, cv_predictions, input_format):
 
     seed = 42
 
     # create models subdir
-    model_dir = os.path.join(os.path.dirname(x_fname), "models")
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
+    if models_dir is None:
+        models_dir = os.path.join(os.path.dirname(x_fname), "models")
+    if not os.path.exists(models_dir):
+        os.makedirs(models_dir)
 
-    model_stat_fname = os.path.join(model_dir, "models_stat.txt")
+    model_stat_fname = os.path.join(models_dir, "models_stat.txt")
 
     # load x and scale
     if input_format == 'txt':
@@ -165,7 +166,7 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
         descr_names, mol_names, x = load_sirms_svm(x_fname)
 
     scale = StandardScaler().fit(x)
-    save_object(scale, os.path.join(model_dir, "scale.pkl"))
+    save_object(scale, os.path.join(models_dir, "scale.pkl"))
     x = scale.transform(x)
 
     # load y
@@ -278,7 +279,7 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
         # build final model, save it and its stat
         m.fit(x, y)
 
-        save_object(m, os.path.join(model_dir, current_model + '.pkl'))
+        save_object(m, os.path.join(models_dir, current_model + '.pkl'))
         save_model_stat_2(current_model, model_stat_fname, str(m.get_params())[1:-1], y, pred,
                           model_type, verbose)
 
@@ -286,7 +287,7 @@ def main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_p
         if cv_predictions:
             # cv_pred = np.copy(y)
             cv_pred = np.vstack((np.copy(y), pred))
-            np.savetxt(os.path.join(model_dir, current_model + "_cv_pred.txt"),
+            np.savetxt(os.path.join(models_dir, current_model + "_cv_pred.txt"),
                        np.column_stack([mol_names, np.round(np.transpose(cv_pred), 3)]),
                        fmt="%s",
                        delimiter="\t",
@@ -310,6 +311,7 @@ def main():
                         help='input text file with property/activity values.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svm pls knn]', default=['rf'], nargs='*',
                         help='models to build.')
+    parser.add_argument('-d', '--models_dir', default=None, help='path to dir where models will be saved.')
     parser.add_argument('-c', '--ncores', metavar='1|2|3|...|all', default=str(cpu_count() - 1),
                         help='number of cores used for models building. Default: all cores - 1.')
     parser.add_argument('-t', '--model_type', metavar='reg|class', default='reg',
@@ -336,11 +338,12 @@ def main():
         if o == "verbose": verbose = int(v)
         if o == "cv_predictions": cv_predictions = v
         if o == "descriptors_format": input_format = v
+        if o == "models_dir": models_dir = v
         if input_format not in ['txt', 'svm']:
             print("Input file format is wrong - %s. Only txt and svm are allowed." % input_format)
             exit()
 
-    main_params(x_fname, y_fname, model_names, ncores, model_type, verbose, cv_predictions, input_format)
+    main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, verbose, cv_predictions, input_format)
 
 
 if __name__ == '__main__':

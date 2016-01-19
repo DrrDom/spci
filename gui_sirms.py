@@ -12,6 +12,7 @@ import os
 from runpy import run_path
 import sys
 import ast
+import glob
 import shutil
 import tkinter as tk
 
@@ -273,62 +274,96 @@ class Tab_1(ttk.Frame):
             messagebox.showerror('ERROR!', 'Specify sdf filename and path.')
             return
 
-        # process mol title
-        if self.compound_names.get() == 'title':
-            tmp_sdf = None
+        # if x.txt does not exist then do all standardization and descriptors calculation
+        if not os.path.isfile(os.path.join(os.path.dirname(self.sdf_path.get()), 'x.txt')):
+
+            # process mol title
+            if self.compound_names.get() == 'title':
+                tmp_sdf = None
+            else:
+                tmp_sdf = self.sdf_path.get().rsplit('.', 1)[0] + '_titles.sdf'
+                if self.compound_names.get() == 'gen':
+                    sdf_field2title.main_params(self.sdf_path.get(), None, tmp_sdf)
+                elif self.compound_names.get() == 'field':
+                    sdf_field2title.main_params(self.sdf_path.get(), self.sdf_id_field_name.get().strip(), tmp_sdf)
+
+            input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
+
+            # standardization and property labeling
+            if self.chemaxon_usage.get() == 'with_chemaxon':
+
+                # standardize
+                # copy xml-rules if the file is absent in the sdf folder
+                shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
+                                os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
+                # run standardize
+                std_sdf_tmp = input_sdf + '.std.sdf'
+                run_params = ['standardize',
+                              '-c',
+                              os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'),
+                              input_sdf,
+                              '-f',
+                              'sdf',
+                              '-o',
+                              std_sdf_tmp]
+                call(run_params, shell=True)
+
+                # calc atomic properties with Chemaxon
+                # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
+                output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
+                calc_atomic_properties_chemaxon.main_params(std_sdf_tmp,
+                                                            output_sdf,
+                                                            ['charge', 'logp', 'acc', 'don', 'refractivity'],
+                                                            None,
+                                                            os.path.join(self.chemaxon_dir.get(), 'cxcalc'))
+
+                os.remove(std_sdf_tmp)
+                if tmp_sdf is not None:
+                    os.remove(tmp_sdf)
+
+            else:
+
+                output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
+                if os.path.isfile(output_sdf):
+                    os.remove(output_sdf)
+                os.rename(tmp_sdf, output_sdf)
+
+            # copy setup.txt to folder with sdf file
+            shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
+                            os.path.join(os.path.dirname(self.sdf_path.get()), 'setup.txt'))
+
+            # calc sirms descriptors
+            if self.chemaxon_usage.get() == 'with_chemaxon':
+                atom_diff = ['charge', 'logp', 'hb', 'refractivity']
+            else:
+                atom_diff = ['elm']
+            x_fname = os.path.join(os.path.dirname(output_sdf), 'x.txt')
+            sirms.main_params(in_fname=output_sdf,
+                              out_fname=x_fname,
+                              opt_no_dict=False,
+                              opt_diff=atom_diff,
+                              opt_types=list(range(3, 12)),
+                              mix_fname=None,
+                              opt_mix_ordered=None,
+                              opt_ncores=1,
+                              opt_verbose=True,
+                              opt_noH=True,
+                              frag_fname=None,
+                              parse_stereo=False,
+                              output_format='svm',
+                              quasimix=False,
+                              id_field_name=None)
+
         else:
-            tmp_sdf = self.sdf_path.get().rsplit('.', 1)[0] + '_titles.sdf'
-            if self.compound_names.get() == 'gen':
-                sdf_field2title.main_params(self.sdf_path.get(), None, tmp_sdf)
-            elif self.compound_names.get() == 'field':
-                sdf_field2title.main_params(self.sdf_path.get(), self.sdf_id_field_name.get().strip(), tmp_sdf)
-
-        input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
-
-        # standardization and property labeling
-        if self.chemaxon_usage.get() == 'with_chemaxon':
-
-            # standardize
-            # copy xml-rules if the file is absent in the sdf folder
-            shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
-                            os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
-            # run standardize
-            std_sdf_tmp = input_sdf + '.std.sdf'
-            run_params = ['standardize',
-                          '-c',
-                          os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'),
-                          input_sdf,
-                          '-f',
-                          'sdf',
-                          '-o',
-                          std_sdf_tmp]
-            call(run_params, shell=True)
-
-            # calc atomic properties with Chemaxon
-            # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
-            output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
-            calc_atomic_properties_chemaxon.main_params(std_sdf_tmp,
-                                                        output_sdf,
-                                                        ['charge', 'logp', 'acc', 'don', 'refractivity'],
-                                                        None,
-                                                        os.path.join(self.chemaxon_dir.get(), 'cxcalc'))
-
-            os.remove(std_sdf_tmp)
-            if tmp_sdf is not None:
-                os.remove(tmp_sdf)
-
-        else:
-
-            output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
-            if os.path.isfile(output_sdf):
-                os.remove(output_sdf)
-            os.rename(tmp_sdf, output_sdf)
+            x_fname = os.path.join(os.path.dirname(self.sdf_path.get()), 'x.txt')
+            self.property_file_path.set(os.path.join(os.path.dirname(self.sdf_path.get()),
+                                                     self.property_field_name.get().strip() + '.txt'))
 
         # extract property, check for numeric values and save to separate file
         if self.property_field_name.get() != '':
             property_filename = os.path.join(os.path.dirname(self.sdf_path.get()),
                                              self.property_field_name.get().strip() + '.txt')
-            extractsdf.main_params(in_fname=output_sdf,
+            extractsdf.main_params(in_fname=os.path.splitext(self.sdf_path.get())[0] + '_std_lbl.sdf',
                                    out_fname=property_filename,
                                    title=True,
                                    field_names=[self.property_field_name.get().strip()],
@@ -336,40 +371,19 @@ class Tab_1(ttk.Frame):
             self.__remove_forbidden_y(property_filename)
             self.property_file_path.set(property_filename)
 
-        # copy setup.txt to folder with sdf file
-        shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
-                        os.path.join(os.path.dirname(self.sdf_path.get()), 'setup.txt'))
-
-        # calc sirms descriptors
-        if self.chemaxon_usage.get() == 'with_chemaxon':
-            atom_diff = ['charge', 'logp', 'hb', 'refractivity']
-        else:
-            atom_diff = ['elm']
-        x_fname = os.path.join(os.path.dirname(output_sdf), 'x.txt')
-        sirms.main_params(in_fname=output_sdf,
-                          out_fname=x_fname,
-                          opt_no_dict=False,
-                          opt_diff=atom_diff,
-                          opt_types=list(range(3, 12)),
-                          mix_fname=None,
-                          opt_mix_ordered=None,
-                          opt_ncores=1,
-                          opt_verbose=True,
-                          opt_noH=True,
-                          frag_fname=None,
-                          parse_stereo=False,
-                          output_format='svm',
-                          quasimix=False,
-                          id_field_name=None)
-
-        # remove models dir
-        if os.path.isdir(os.path.join(os.path.dirname(x_fname), "models")):
-            shutil.rmtree(os.path.join(os.path.dirname(x_fname), "models"))
+        # remove models from output dir which conflict with newly build models
+        models_dir = os.path.join(os.path.dirname(x_fname), self.property_field_name.get().strip(), "models")
+        if os.path.isdir(models_dir):
+            file_names = glob.glob1(models_dir, '*.pkl')
+            for file_name in file_names:
+                if file_name.rsplit('.', 1)[0] in self.models_frame.get_selected_models():
+                    os.remove(os.path.join(models_dir, file_name))
 
         # build models
         model.main_params(x_fname=x_fname,
                           y_fname=self.property_file_path.get(),
                           model_names=self.models_frame.get_selected_models(),
+                          models_dir=models_dir,
                           ncores=self.sb_cpu_count.get_value(),
                           # ncores=max(1, cpu_count() - 1),
                           model_type=self.models_frame.model_type.get(),
@@ -418,6 +432,10 @@ class Tab_1(ttk.Frame):
             self.children['optional_label_frame'].children['inner_frame'].children['sdf_id_field_name'].set(value=field_names[0])
         self.__add_sdf_path_to_history(self.sdf_path.get())
         self.children['sdf_label_frame'].children['sdf_path_combobox'].configure(values=self.__read_sdf_history())
+        # update list of models to plot
+        self.master.children['tab_3']._show_models_list()
+
+    def __prop_field_name_changed(self, varname, elementname, mode):
         # update list of models to plot
         self.master.children['tab_3']._show_models_list()
 
@@ -520,6 +538,7 @@ class Tab_1(ttk.Frame):
         self.columnconfigure(0, weight=1)
 
         self.sdf_path.trace('w', self.__sdf_path_changed)
+        self.property_field_name.trace('w', self.__prop_field_name_changed)
         self.chemaxon_usage.trace('w', self.__chemaxon_usage_changed)
 
         parent.add(self, text=tab_name)
@@ -538,7 +557,8 @@ class Tab_2(ttk.Frame):
 
         sdf_fname = self.master.children['tab_1'].sdf_path.get()[:-4] + '_std_lbl.sdf'
 
-        wd = os.path.realpath(os.path.dirname(sdf_fname))
+        prop_name = self.master.children['tab_1'].property_field_name.get()
+        wd = os.path.realpath(os.path.join(os.path.dirname(sdf_fname), prop_name))
 
         ids_fname = os.path.join(wd, self.frags_choice.get() + '_frag_ids.txt')
 
@@ -583,7 +603,7 @@ class Tab_2(ttk.Frame):
         else:
             atom_diff = ['elm']
 
-        x_fname = os.path.join(os.path.dirname(sdf_fname), self.frags_choice.get() + '_frag_x.txt')
+        x_fname = os.path.join(wd, self.frags_choice.get() + '_frag_x.txt')
         sirms.main_params(in_fname=sdf_fname,
                           out_fname=x_fname,
                           opt_no_dict=False,
@@ -601,9 +621,9 @@ class Tab_2(ttk.Frame):
                           id_field_name=None)
 
         # calc contributions
-        out_fname = os.path.join(os.path.dirname(sdf_fname), self.frags_choice.get() + '_frag_contributions.txt')
+        out_fname = os.path.join(wd, self.frags_choice.get() + '_frag_contributions.txt')
         models = self.master.children['tab_1'].models_frame.get_selected_models()
-        model_dir = os.path.join(os.path.dirname(sdf_fname), 'models')
+        model_dir = os.path.join(wd, 'models')
 
         if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
             prop_name = ['overall', 'charge', 'logp', 'hb', 'refractivity']
@@ -693,6 +713,10 @@ class Tab_3(ttk.Frame):
                 self._models_chkbox[m] = tk.BooleanVar(value=True)
                 ttk.Checkbutton(model_frame, name='chk_' + m, variable=self._models_chkbox[m], text=m.upper()).grid(column=0, row=i, sticky=(tk.W), padx=5, pady=(3, 1))
 
+        else:
+            if 'model_frame' in self.children.keys():
+                self.children['model_frame'].destroy()
+
     def __run_plot(self, event):
         self.__plot_contributions()
 
@@ -716,7 +740,9 @@ class Tab_3(ttk.Frame):
 
     def _get_model_list(self):
         if self.master.children['tab_1'].sdf_path.get() != '':
-            models_dir = os.path.join(os.path.dirname(self.master.children['tab_1'].sdf_path.get()), "models")
+            models_dir = os.path.join(os.path.dirname(self.master.children['tab_1'].sdf_path.get()),
+                                      self.master.children['tab_1'].property_field_name.get(),
+                                      "models")
             if os.path.isdir(models_dir):
                 files = [f[:-4] for f in os.listdir(models_dir) if f.endswith('.pkl')]
                 files.remove('scale')
@@ -745,7 +771,7 @@ class Tab_3(ttk.Frame):
             fig_fname = None
 
 
-        wd = os.path.dirname(self.master.children['tab_1'].sdf_path.get())
+        wd = os.path.join(os.path.dirname(self.master.children['tab_1'].sdf_path.get()), self.master.children['tab_1'].property_field_name.get())
         contr_fname = os.path.join(wd, self.master.children['tab_2'].frags_choice.get() + '_frag_contributions.txt')
 
         # models = self.master.children['tab_1'].models_frame.get_selected_models()
