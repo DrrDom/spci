@@ -1,3 +1,3 @@
-refractivity=2<3<5
-logp=-0.5<0<0.5
-charge=-0.05<0<0.05
+REFRACTIVITY=2<3<5
+LOGP=-0.5<0<0.5
+CHARGE=-0.05<0<0.05

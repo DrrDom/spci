@@ -334,7 +334,7 @@ class Tab_1(ttk.Frame):
 
             # calc sirms descriptors
             if self.chemaxon_usage.get() == 'with_chemaxon':
-                atom_diff = ['charge', 'logp', 'hb', 'refractivity']
+                atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
             else:
                 atom_diff = ['elm']
             x_fname = os.path.join(os.path.dirname(output_sdf), 'x.txt')
@@ -599,7 +599,7 @@ class Tab_2(ttk.Frame):
 
         # calc sirms descriptors
         if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
-            atom_diff = ['charge', 'logp', 'hb', 'refractivity']
+            atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
         else:
             atom_diff = ['elm']
 
@@ -626,7 +626,7 @@ class Tab_2(ttk.Frame):
         model_dir = os.path.join(wd, 'models')
 
         if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
-            prop_name = ['overall', 'charge', 'logp', 'hb', 'refractivity']
+            prop_name = ['overall', 'CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
         else:
             prop_name = ['overall']
 
@@ -727,11 +727,11 @@ class Tab_3(ttk.Frame):
 
     def __get_selected_contributions(self):
         output = []
-        if self.contr_charge.get(): output.append('charge')
-        if self.contr_logp.get(): output.append('logp')
+        if self.contr_charge.get(): output.append('CHARGE')
+        if self.contr_logp.get(): output.append('LOGP')
         if self.contr_overall.get(): output.append('overall')
-        if self.contr_hb.get(): output.append('hb')
-        if self.contr_ref.get(): output.append('refractivity')
+        if self.contr_hb.get(): output.append('HB')
+        if self.contr_ref.get(): output.append('REFRACTIVITY')
         return output
 
     def _get_selected_models(self):

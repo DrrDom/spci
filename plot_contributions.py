@@ -280,13 +280,13 @@ def main_params(contr_fname, contr_names, fig_fname, model_names, on_screen, min
                                  width=data[model_name][prop_name],
                                  height=bar_width,
                                  color=colors[j])
-                    if prop_name == "charge":
+                    if prop_name == "CHARGE":
                         br.set_label("electrostatic")
-                    if prop_name == "logp":
+                    if prop_name == "LOGP":
                         br.set_label("hydrophobic")
-                    if prop_name == "hb":
+                    if prop_name == "HB":
                         br.set_label("hydrogen bonding")
-                    if prop_name == "refractivity":
+                    if prop_name == "REFRACTIVITY":
                         br.set_label("dispersive")
                     if prop_name == "overall":
                         br.set_label("overall")
@@ -334,13 +334,13 @@ def main_params(contr_fname, contr_names, fig_fname, model_names, on_screen, min
                              width=[i[1] for i in data[model_name][prop_name]],
                              height=bar_width,
                              color=colors[j])
-                if prop_name == "charge":
+                if prop_name == "CHARGE":
                     br.set_label("electrostatic")
-                if prop_name == "logp":
+                if prop_name == "LOGP":
                     br.set_label("hydrophobic")
-                if prop_name == "hb":
+                if prop_name == "HB":
                     br.set_label("hydrogen bonding")
-                if prop_name == "refractivity":
+                if prop_name == "REFRACTIVITY":
                     br.set_label("dispersive")
                 if prop_name == "overall":
                     br.set_label("overall")

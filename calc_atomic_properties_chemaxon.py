@@ -30,7 +30,7 @@ def add_HB(molstr):
     hb = []
     for a, d in zip(acc, don):
         if a == "A" and d == "D":
-            hb.append("AD")
+            hb.append("A|D")
         elif a == "A":
             hb.append("A")
         elif d == "D":
@@ -119,7 +119,7 @@ def main_params(in_fname, out_fname, prop, pH, cxcalc_path):
 def main():
 
     parser = argparse.ArgumentParser(description='Calculate atomic properties with Chemaxon cxcalc tool. '
-                                                 'Molecules which produce errors are omitted from output file.'
+                                                 'Molecules which produce errors are omitted from output file. '
                                                  'Omitted molecules will be listed in the created log file.')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=True,
                         help='input sdf file with standardized structures, molecules should have titles')
