@@ -74,7 +74,7 @@ def main_params(in_fname, out_fname, prop, pH, cxcalc_path):
         run_params.append("don")
         run_params = add_pH(run_params, pH)
     if run_params != start_params:
-        call(run_params, shell=True)
+        call(' '.join(run_params), shell=True)
 
     # read numbers of molecules which produce errors
     mol_errors = []

@@ -294,6 +294,7 @@ class Tab_1(ttk.Frame):
             if self.chemaxon_usage.get() == 'with_chemaxon':
 
                 # standardize
+                print('Standardization is in progress...')
                 # copy xml-rules if the file is absent in the sdf folder
                 shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
                                 os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
@@ -307,9 +308,10 @@ class Tab_1(ttk.Frame):
                               'sdf',
                               '-o',
                               std_sdf_tmp]
-                call(run_params, shell=True)
+                call(' '.join(run_params), shell=True)
 
                 # calc atomic properties with Chemaxon
+                print('Atomic properties calculation is in progress...')
                 # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
                 output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
                 calc_atomic_properties_chemaxon.main_params(std_sdf_tmp,
