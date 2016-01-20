@@ -426,10 +426,12 @@ class Tab_1(ttk.Frame):
             open(hist, 'wt').write(new_line)
 
     def __read_sdf_history(self):
-        lines = open(os.path.join(get_script_path(), 'history.txt')).readlines()
-        lines = [line.strip() for line in lines]
-        lines.reverse()
-        return lines
+        file_name = os.path.join(get_script_path(), 'history.txt')
+        if os.path.isfile(file_name):
+            lines = open(file_name).readlines()
+            lines = [line.strip() for line in lines]
+            lines.reverse()
+            return lines
 
     def __sdf_path_changed(self, varname, elementname, mode):
         field_names = self.__read_sdf_field_names(self.sdf_path.get())
