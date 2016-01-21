@@ -630,6 +630,11 @@ class Tab_2(ttk.Frame):
                           quasimix=False,
                           id_field_name=None)
 
+        # filter sirms descriptors
+        filter_descriptors.main_params(in_fname=x_fname,
+                                       out_fname=x_fname,
+                                       input_format='svm')
+
         # calc contributions
         out_fname = os.path.join(wd, self.frags_choice.get() + '_frag_contributions.txt')
         models = self.master.children['tab_1'].models_frame.get_selected_models()
