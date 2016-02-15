@@ -653,7 +653,8 @@ class Tab_2(ttk.Frame):
                                       model_type=self.master.children['tab_1'].models_frame.model_type.get(),
                                       verbose=True,
                                       save_pred=True,
-                                      input_format='svm')
+                                      input_format='svm',
+                                      long_format=False)
 
         print("Calculation completed.")
 

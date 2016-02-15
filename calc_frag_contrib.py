@@ -64,13 +64,21 @@ def prepare_dataset(x_train, x_frag, prop_name, descr_names, x_train_mol_names, 
     return output
 
 
-def save_contrib(fname, contrib_dict, frag_full_names):
-    with open(fname, "wt") as f:
-        f.write("Model_Contribution\t" + "\t".join(frag_full_names) + "\n")
-        for model_name in contrib_dict.keys():
-            for prop_name in contrib_dict[model_name].keys():
-                f.write(model_name + "_" + prop_name + "\t" +
-                        "\t".join(["{0:.6f}".format(i) for i in contrib_dict[model_name][prop_name]]) + "\n")
+def save_contrib(fname, contrib_dict, frag_full_names, long_format):
+    if not long_format:
+        with open(fname, "wt") as f:
+            f.write("Model_Contribution\t" + "\t".join(frag_full_names) + "\n")
+            for model_name in contrib_dict.keys():
+                for prop_name in contrib_dict[model_name].keys():
+                    f.write(model_name + "_" + prop_name + "\t" +
+                            "\t".join(["{0:.6f}".format(i) for i in contrib_dict[model_name][prop_name]]) + "\n")
+    else:
+        with open(fname, "wt") as f:
+            f.write("Compound\tFragment\tModel\tContribution_type\tContribution_value\n")
+            for model_name in contrib_dict.keys():
+                for prop_name in contrib_dict[model_name].keys():
+                    for frag_full_name, value in zip(frag_full_names, contrib_dict[model_name][prop_name]):
+                        f.write('\t'.join(frag_full_name.split(mol_frag_sep)) + '\t' + model_name + '\t' + prop_name + '\t' + "{0:.6f}".format(value) + '\n')
 
 
 def predict(x, model, model_name, model_type):
@@ -90,7 +98,7 @@ def predict(x, model, model_name, model_type):
     return pred
 
 
-def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format):
+def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format, long_format):
 
     if save_pred:
         save_pred_fname = os.path.splitext(out_fname)[0] + "_pred.txt"
@@ -181,7 +189,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     #
     #             frag_contrib[model_name][prop_name] = [xtrain_pred[mol_name] - xfrag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)]
 
-    save_contrib(out_fname, frag_contrib, sirms_file.get_frag_full_names())
+    save_contrib(out_fname, frag_contrib, sirms_file.get_frag_full_names(), long_format)
 
 
 def main():
@@ -195,6 +203,9 @@ def main():
                              'rownames and colnames. Default: txt.')
     parser.add_argument('-o', '--output', metavar='contributions.txt', required=True,
                         help='output text file with fragments contributions.')
+    parser.add_argument('--output_long_format', action='store_true', default=False,
+                        help='store output in long instead of short format. Long format is easier to parse but takes '
+                             'more disk space. Default: false.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svr pls knn]', required=True, nargs='*',
                         help='file name of saved models (without extension)')
     parser.add_argument('-d', '--models_dir', metavar='path_to_models', required=True,
@@ -220,11 +231,12 @@ def main():
         if o == "verbose": verbose = v
         if o == "save_intermediate_prediction": save_pred = v
         if o == "input_format": input_format = v
+        if o == "output_long_format": long_format = v
         if input_format not in ['txt', 'svm']:
             print("Wrong input file format - %s. Only txt and svm file formats are allowed." % input_format)
             exit()
 
-    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format)
+    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format, long_format)
 
 
 if __name__ == '__main__':

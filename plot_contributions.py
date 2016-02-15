@@ -27,31 +27,28 @@ def read_contrib_file(fname, model_names, min_M, min_N, contr_names):
      'rf': ...}
     """
     d = defaultdict(dict)
+
     with open(fname) as f:
 
         names = f.readline().strip().split('\t')[1:]
 
-        frag_mol_names = defaultdict(list)
+        # count number of molecules for each fragment
+        frag_mol_count = defaultdict(int)
         frag_names = []
 
         for n in names:
             mol_name, frag_name = n.split(mol_frag_sep)
-            frag_mol_names[frag_name].append(mol_name)
+            frag_mol_count[frag_name] += 1
             frag_names.append(frag_name)
-
-        # count number of molecules for each fragment
-        frag_mol_names = dict(frag_mol_names)
-        for k, v in frag_mol_names.items():
-            frag_mol_names[k] = len(set(v))
 
         # count number of each fragment
         frag_count = Counter(frag_names)
 
-        # create new fragment names and create list of filtered indices (fulfil min_M and min_N)
+        # create new fragment names and create list of filtered indices (according to min_M and min_N)
         keep_ids = []
         for i, v in enumerate(frag_names):
-            frag_names[i] = frag_names[i] + " (M=" + str(frag_mol_names[v]) + ", N=" + str(frag_count[v]) + ")"
-            if frag_mol_names[v] >= min_M and frag_count[v] >= min_N:
+            frag_names[i] = frag_names[i] + " (M=" + str(frag_mol_count[v]) + ", N=" + str(frag_count[v]) + ")"
+            if frag_mol_count[v] >= min_M and frag_count[v] >= min_N:
                 keep_ids.append(i)
 
         # filter out frag_names by keep_ids
