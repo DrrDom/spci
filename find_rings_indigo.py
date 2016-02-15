@@ -36,7 +36,7 @@ def main_params(in_sdf, out_txt, verbose, error_fname):
 
                 for i, r in enumerate(rings):
                     # if ring is not present in a bigger one than add it to the output text file
-                    if all([not r[1].issubset(rings[j][1]) for j in range(i-1)]):
+                    if all([not r[1].issubset(rings[j][1]) for j in range(i)]):
                         # create 1-based indices
                         tmp_ids = list(map(lambda x: x + 1, r[1]))
                         f.write(mol_name + "\t" + r[0] + "\t" + "\t".join(map(str, tmp_ids)) + "\n")
