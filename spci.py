@@ -360,7 +360,7 @@ class Tab_1(ttk.Frame):
             # filter sirms descriptors
             filter_descriptors.main_params(in_fname=x_fname,
                                            out_fname=x_fname,
-                                           input_format='svm')
+                                           file_format='svm')
 
         else:
             x_fname = os.path.join(os.path.dirname(self.sdf_path.get()), 'x.txt')
@@ -633,7 +633,7 @@ class Tab_2(ttk.Frame):
         # filter sirms descriptors
         filter_descriptors.main_params(in_fname=x_fname,
                                        out_fname=x_fname,
-                                       input_format='svm')
+                                       file_format='svm')
 
         # calc contributions
         out_fname = os.path.join(wd, self.frags_choice.get() + '_frag_contributions.txt')
