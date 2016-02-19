@@ -232,9 +232,9 @@ def main():
         if o == "save_intermediate_prediction": save_pred = v
         if o == "input_format": input_format = v
         if o == "output_long_format": long_format = v
-        if input_format not in ['txt', 'svm']:
-            print("Wrong input file format - %s. Only txt and svm file formats are allowed." % input_format)
-            exit()
+    if input_format not in ['txt', 'svm']:
+        print("Wrong input file format - %s. Only txt and svm file formats are allowed." % input_format)
+        exit()
 
     main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format, long_format)
 
