@@ -80,17 +80,22 @@ def main_params(in_fname, out_fname, file_format):
         colnames = open(os.path.splitext(in_fname)[0] + '.colnames').readlines()
         new_colnames = [item for item in colnames if "|HB|I,I,I,I|" not in item]
 
+        ids = dict()  # {old_num: new_num, ...} as strings
+        for i in range(len(colnames)):
+            try:
+                ids[str(i)] = str(new_colnames.index(colnames[i]))
+            except ValueError:
+                continue
+
         with open(in_fname) as f_in:
             with open(in_fname + '.tmp' if out_fname == in_fname else out_fname, 'wt') as f_out:
                 for line in f_in:
                     items = [tuple(item.split(':')) for item in line.strip().split(' ')]
                     output = []
                     for item in items:
-                        try:
-                            id = new_colnames.index(colnames[int(item[0])])
-                            output.append(str(id) + ':' + item[1])
-                        except ValueError:
-                            continue
+                        id = ids.get(item[0], None)
+                        if id is not None:
+                            output.append(id + ':' + item[1])
                     f_out.write(' '.join(output) + '\n')
 
         if out_fname == in_fname:
