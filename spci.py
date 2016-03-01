@@ -404,7 +404,9 @@ class Tab_1(ttk.Frame):
 
     def __show_models_stat(self):
         win = StatWindow(self)
-        win.fill_data(os.path.join(os.path.dirname(self.sdf_path.get()), 'models\\models_stat.txt'))
+        win.fill_data(os.path.join(os.path.dirname(self.sdf_path.get()),
+                                   self.property_field_name.get().strip(),
+                                   'models\\models_stat.txt'))
 
     def __add_sdf_path_to_history(self, sdf_path):
         if sdf_path is None or sdf_path == "":
