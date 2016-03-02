@@ -31,7 +31,11 @@ def main_params(in_sdf, out_txt, verbose, error_fname):
                     print("Searching for rings in", mol_name)
 
                 # return all rings in format [[SMILES, {indices}], ...]
-                rings = [[ring.clone().canonicalSmiles().split(" ")[0], set([atom.index() for atom in ring.iterateAtoms()])] for ring in mol.iterateRings(1, mol.countAtoms())]
+                rings = []
+                for ring in mol.iterateRings(1, mol.countAtoms()):
+                    atom_ids = [atom.index() for atom in ring.iterateAtoms()]
+                    smi = mol.createSubmolecule(atom_ids).canonicalSmiles().split(" ")[0]
+                    rings.append([smi, set(atom_ids)])
                 rings = sorted(rings, key=lambda x: len(x[1]), reverse=True)
 
                 for i, r in enumerate(rings):
