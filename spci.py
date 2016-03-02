@@ -22,6 +22,7 @@ from tkinter import messagebox
 from tkinter import font as tkfont
 from multiprocessing import cpu_count
 from subprocess import call
+from collections import OrderedDict
 
 import sdf_field2title
 import calc_atomic_properties_chemaxon
@@ -558,6 +559,12 @@ class Tab_1(ttk.Frame):
 
 class Tab_2(ttk.Frame):
 
+    def get_frag_prefix(self):
+        if self.frags_choice.get() != 'auto':
+            return self.frags_choice.get()
+        else:
+            return self.auto_frags_choice.get().split(':')[0]
+
     def __select_user_frags(self):
         self.user_frags_path.set(filedialog.askopenfilename(filetypes=[('SMARTS file', '*.smarts; *.txt'),
                                                                        ('SMILES file', '*.smi; *.smiles'),
@@ -572,7 +579,7 @@ class Tab_2(ttk.Frame):
         prop_name = self.master.children['tab_1'].property_field_name.get()
         wd = os.path.realpath(os.path.join(os.path.dirname(sdf_fname), prop_name))
 
-        ids_fname = os.path.join(wd, self.frags_choice.get() + '_frag_ids.txt')
+        ids_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_ids.txt')
 
         if self.frags_choice.get() == 'user':
             if self.user_frags_path.get() == '':
@@ -604,7 +611,7 @@ class Tab_2(ttk.Frame):
         elif self.frags_choice.get() == 'auto':
             find_frags_auto.main_params(in_sdf=sdf_fname,
                                         out_txt=ids_fname,
-                                        query='[#6+0;!$(*=,#[!#6])]!@!=!#[*]',
+                                        query=self.auto_schemes[self.auto_frags_choice.get()],
                                         max_cuts=3,
                                         verbose=True,
                                         error_fname=os.path.join(wd, "indigo_errors.log"))
@@ -615,7 +622,7 @@ class Tab_2(ttk.Frame):
         else:
             atom_diff = ['elm']
 
-        x_fname = os.path.join(wd, self.frags_choice.get() + '_frag_x.txt')
+        x_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_x.txt')
         sirms.main_params(in_fname=sdf_fname,
                           out_fname=x_fname,
                           opt_no_dict=False,
@@ -638,7 +645,7 @@ class Tab_2(ttk.Frame):
                                        file_format='svm')
 
         # calc contributions
-        out_fname = os.path.join(wd, self.frags_choice.get() + '_frag_contributions.txt')
+        out_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_contributions.txt')
         models = self.master.children['tab_1'].models_frame.get_selected_models()
         model_dir = os.path.join(wd, 'models')
 
@@ -663,6 +670,9 @@ class Tab_2(ttk.Frame):
     def __change_to_user(self, event):
         self.frags_choice.set(value='user')
 
+    def __change_to_auto(self, event):
+        self.frags_choice.set(value='auto')
+
     def __run_calc_contrib(self, event):
         self.__calc_contributions()
 
@@ -670,7 +680,12 @@ class Tab_2(ttk.Frame):
 
         ttk.Frame.__init__(self, parent, name='tab_2')
 
+        self.auto_schemes = OrderedDict()
+        self.auto_schemes['auto1: [#6+0;!$(*=,#[!#6])]!@!=!#[*] (MMP like, quite exhaustive)'] = '[#6+0;!$(*=,#[!#6])]!@!=!#[*]'
+        self.auto_schemes['auto2: [R]-[!R] (break bond between chain and ring atoms)'] = '[R]-[!R]'
+
         self.frags_choice = tk.StringVar(value='default')
+        self.auto_frags_choice = tk.StringVar(value=list(self.auto_schemes.keys())[0])
         self.user_frags_path = tk.StringVar()
 
         frame = ttk.Labelframe(self, text='Select fragments set or fragmentation scheme')
@@ -688,14 +703,18 @@ class Tab_2(ttk.Frame):
             grid(column=0, row=7, sticky=tk.W, padx=5, pady=(0, 1))
         ttk.Radiobutton(frame, text='Automatic fragmentation', name='auto_frag', value='auto', variable=self.frags_choice).\
             grid(column=0, row=8, sticky=tk.W, padx=5, pady=(0, 1))
+
+        cmbbox = ttk.Combobox(frame, name='sdf_path_combobox', width=70, textvariable=self.auto_frags_choice, values=list(self.auto_schemes.keys()), state='readonly')
+        cmbbox.grid(column=1, row=8, columnspan=2, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
+
         ttk.Radiobutton(frame, text='User-defined fragments', name='user_frag', value='user', variable=self.frags_choice).\
             grid(column=0, row=9, sticky=tk.W, padx=5, pady=(0, 1))
 
         self.__entry_user_frags_path = ttk.Entry(frame, width=70, textvariable=self.user_frags_path)
-        self.__entry_user_frags_path.grid(column=0, row=15, sticky=(tk.W, tk.E), padx=5, pady=(0, 3))
+        self.__entry_user_frags_path.grid(column=0, row=15, columnspan=2, sticky=(tk.W, tk.E), padx=5, pady=(0, 3))
 
         self.__btn_user_frags_path = ttk.Button(frame, text='Browse...', command=self.__select_user_frags)
-        self.__btn_user_frags_path.grid(column=1, row=15, sticky=(tk.W), padx=5, pady=(0, 3))
+        self.__btn_user_frags_path.grid(column=2, row=15, sticky=(tk.W), padx=5, pady=(0, 3))
 
         frame = tk.Frame(self)
         frame.grid(column=0, row=6, columnspan=2)
@@ -711,6 +730,10 @@ class Tab_2(ttk.Frame):
         self.__entry_user_frags_path.bind('<Button-3>', self.__change_to_user)
         self.__entry_user_frags_path.bind('<Return>', self.__run_calc_contrib)
         self.__btn_user_frags_path.bind('<Button-1>', self.__change_to_user)
+        cmbbox.bind('<<ComboboxSelected>>', self.__change_to_auto)
+        cmbbox.bind('<Button-1>', self.__change_to_auto)
+        cmbbox.bind('<Button-2>', self.__change_to_auto)
+        cmbbox.bind('<Button-3>', self.__change_to_auto)
 
         parent.add(self, text=tab_name)
 
@@ -790,7 +813,7 @@ class Tab_3(ttk.Frame):
 
 
         wd = os.path.join(os.path.dirname(self.master.children['tab_1'].sdf_path.get()), self.master.children['tab_1'].property_field_name.get())
-        contr_fname = os.path.join(wd, self.master.children['tab_2'].frags_choice.get() + '_frag_contributions.txt')
+        contr_fname = os.path.join(wd, self.master.children['tab_2'].get_frag_prefix() + '_frag_contributions.txt')
 
         # models = self.master.children['tab_1'].models_frame.get_selected_models()
         models = self._get_selected_models()
