@@ -864,11 +864,11 @@ class Tab_3(ttk.Frame):
 def main():
 
     root = tk.Tk()
-    root.title("SiRMS QSAR interpretation")
+    root.title("SPCI - structural and physico-chemical interpretation of QSAR models")
 
     content = ttk.Frame(root)
 
-    lbl_copyright = ttk.Label(content, text='(c) Pavel Polishchuk 2014-2015')
+    lbl_copyright = ttk.Label(content, text='(c) Pavel Polishchuk 2014-2016')
 
     tabs = ttk.Notebook(content)
     tab_1 = Tab_1(tabs, 'Build models')
