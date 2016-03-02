@@ -20,6 +20,7 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import font as tkfont
+from tkinter import messagebox
 from multiprocessing import cpu_count
 from subprocess import call
 from collections import OrderedDict
@@ -574,75 +575,107 @@ class Tab_2(ttk.Frame):
 
     def __calc_contributions(self):
 
+        """
+        Intermediate files with atom ids and descriptors of fragmented molecules are stored in main dir for all
+        pre-defined fragmentation schemes. Intermediate files generated during user-defined scheme are stored in
+        the work (property) dir.
+        Files with calculated contributions are stored in work (property) dir.
+        """
+
         sdf_fname = self.master.children['tab_1'].sdf_path.get()[:-4] + '_std_lbl.sdf'
 
         prop_name = self.master.children['tab_1'].property_field_name.get()
-        wd = os.path.realpath(os.path.join(os.path.dirname(sdf_fname), prop_name))
+        main_dir = os.path.dirname(sdf_fname)
+        wd = os.path.realpath(os.path.join(main_dir, prop_name))
 
-        ids_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_ids.txt')
-
-        if self.frags_choice.get() == 'user':
-            if self.user_frags_path.get() == '':
-                messagebox.showerror('Error!', 'Specify path to the fragments file.')
+        # check for existence of XXX_frag_x.txt to avoid recalculation of fragments and descriptors
+        if self.frags_choice.get() == 'user' and os.path.isfile(os.path.join(wd, 'user_frag_x.txt')):
+            exist = messagebox.askyesnocancel(message='Do you want to keep existed user-defined fragmentation?', icon='question', default='yes')
+            if exist is None:
                 return
-            else:
-                frag_fname = self.user_frags_path.get()
-        elif self.frags_choice.get() == 'default':
-            frag_fname = os.path.join(get_script_path(), 'default.smarts')
-
-        # find atom ids
-        if self.frags_choice.get() in ['user', 'default']:
-            find_frags.main_params(in_sdf=sdf_fname,
-                                   out_txt=ids_fname,
-                                   in_frags=frag_fname,
-                                   remove_all=False,
-                                   verbose=True,
-                                   error_fname=os.path.join(wd, "indigo_errors.log"))
-        elif self.frags_choice.get() == 'rings':
-            find_rings.main_params(in_sdf=sdf_fname,
-                                   out_txt=ids_fname,
-                                   verbose=True,
-                                   error_fname=os.path.join(wd, "indigo_errors.log"))
-        elif self.frags_choice.get() == 'murcko':
-            find_murcko.main_params(in_sdf=sdf_fname,
-                                    out_txt=ids_fname,
-                                    verbose=True,
-                                    error_fname=os.path.join(wd, "indigo_errors.log"))
-        elif self.frags_choice.get() == 'auto':
-            find_frags_auto.main_params(in_sdf=sdf_fname,
-                                        out_txt=ids_fname,
-                                        query=self.auto_schemes[self.auto_frags_choice.get()],
-                                        max_cuts=3,
-                                        verbose=True,
-                                        error_fname=os.path.join(wd, "indigo_errors.log"))
-
-        # calc sirms descriptors
-        if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
-            atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
         else:
-            atom_diff = ['elm']
+            exist = os.path.isfile(os.path.join(main_dir, self.get_frag_prefix() + '_frag_x.txt'))
 
-        x_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_x.txt')
-        sirms.main_params(in_fname=sdf_fname,
-                          out_fname=x_fname,
-                          opt_no_dict=False,
-                          opt_diff=atom_diff,
-                          opt_types=list(range(3, 12)),
-                          mix_fname=None,
-                          opt_mix_ordered=None,
-                          opt_ncores=1,
-                          opt_verbose=True,
-                          opt_noH=True,
-                          frag_fname=ids_fname,
-                          parse_stereo=False,
-                          output_format='svm',
-                          quasimix=False,
-                          id_field_name=None)
+        if not exist:
 
-        # filter sirms descriptors
-        filter_descriptors.main_params(in_fname=x_fname,
-                                       out_fname=x_fname,
-                                       file_format='svm')
+            if self.frags_choice.get() == 'user':
+                ids_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_ids.txt')
+            else:
+                ids_fname = os.path.join(main_dir, self.get_frag_prefix() + '_frag_ids.txt')
+
+            if self.frags_choice.get() == 'user':
+                if self.user_frags_path.get() == '':
+                    messagebox.showerror('Error!', 'Specify path to the fragments file.')
+                    return
+                else:
+                    frag_fname = self.user_frags_path.get()
+            elif self.frags_choice.get() == 'default':
+                frag_fname = os.path.join(get_script_path(), 'default.smarts')
+
+            # find atom ids
+            if self.frags_choice.get() in ['user', 'default']:
+                find_frags.main_params(in_sdf=sdf_fname,
+                                       out_txt=ids_fname,
+                                       in_frags=frag_fname,
+                                       remove_all=False,
+                                       verbose=True,
+                                       error_fname=os.path.join(main_dir, "indigo_errors.log"))
+            elif self.frags_choice.get() == 'rings':
+                find_rings.main_params(in_sdf=sdf_fname,
+                                       out_txt=ids_fname,
+                                       verbose=True,
+                                       error_fname=os.path.join(main_dir, "indigo_errors.log"))
+            elif self.frags_choice.get() == 'murcko':
+                find_murcko.main_params(in_sdf=sdf_fname,
+                                        out_txt=ids_fname,
+                                        verbose=True,
+                                        error_fname=os.path.join(main_dir, "indigo_errors.log"))
+            elif self.frags_choice.get() == 'auto':
+                find_frags_auto.main_params(in_sdf=sdf_fname,
+                                            out_txt=ids_fname,
+                                            query=self.auto_schemes[self.auto_frags_choice.get()],
+                                            max_cuts=3,
+                                            verbose=True,
+                                            error_fname=os.path.join(main_dir, "indigo_errors.log"))
+
+            # calc sirms descriptors
+            if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+                atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
+            else:
+                atom_diff = ['elm']
+
+            if self.frags_choice.get() == 'user':
+                x_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_x.txt')
+            else:
+                x_fname = os.path.join(main_dir, self.get_frag_prefix() + '_frag_x.txt')
+
+            sirms.main_params(in_fname=sdf_fname,
+                              out_fname=x_fname,
+                              opt_no_dict=False,
+                              opt_diff=atom_diff,
+                              opt_types=list(range(3, 12)),
+                              mix_fname=None,
+                              opt_mix_ordered=None,
+                              opt_ncores=1,
+                              opt_verbose=True,
+                              opt_noH=True,
+                              frag_fname=ids_fname,
+                              parse_stereo=False,
+                              output_format='svm',
+                              quasimix=False,
+                              id_field_name=None)
+
+            # filter sirms descriptors
+            filter_descriptors.main_params(in_fname=x_fname,
+                                           out_fname=x_fname,
+                                           file_format='svm')
+        else:
+
+            # define path to descriptors of fragmented structures
+            if self.frags_choice.get() == 'user':
+                x_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_x.txt')
+            else:
+                x_fname = os.path.join(main_dir, self.get_frag_prefix() + '_frag_x.txt')
 
         # calc contributions
         out_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_contributions.txt')
