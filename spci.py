@@ -715,7 +715,7 @@ class Tab_2(ttk.Frame):
 
         self.auto_schemes = OrderedDict()
         self.auto_schemes['auto1: [#6+0;!$(*=,#[!#6])]!@!=!#[*] (MMP like, quite exhaustive)'] = '[#6+0;!$(*=,#[!#6])]!@!=!#[*]'
-        self.auto_schemes['auto2: [R]-[!R] (break bond between chain and ring atoms)'] = '[R]-[!R]'
+        self.auto_schemes['auto2: [R]-[!R;!#1] (break bond between chain and ring atoms)'] = '[R]-[!R;!#1]'
 
         self.frags_choice = tk.StringVar(value='default')
         self.auto_frags_choice = tk.StringVar(value=list(self.auto_schemes.keys())[0])
