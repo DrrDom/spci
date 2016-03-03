@@ -20,9 +20,11 @@ class SirmsFile():
 
         if file_format == 'txt':
             self.__varnames = open(fname).readline().strip().split('\t')[1:]
+            self.____mol_full_names = []         # keep the names of all molecules which were read
             self.__frag_full_names = []          # keep the names of all fragments which were read
                                                  # order is important since calculated contributions are saved in
                                                  # the same order (mol1###frag1, ...) (not mol1###frag1#1)
+            self.__is_mol_full_names_read = False
             self.__is_frag_full_names_read = False
 
         elif file_format == 'svm':
@@ -42,6 +44,9 @@ class SirmsFile():
 
     def get_frag_full_names(self):
         return self.__frag_full_names
+
+    def get_mol_names(self):
+        return self.__mol_full_names
 
     def reset_read(self):
         self.__cur_mol_read = 0
@@ -112,9 +117,13 @@ class SirmsFile():
         if not self.__is_frag_full_names_read:
             self.__frag_full_names.extend([mol_name.rsplit('#', 1)[0] for mol_name in mol_names if mol_name.find(mol_frag_sep) > -1])
 
-        # if EOF then stop updating the list of fragments (it is read only once)
-        if not self.__is_frag_full_names_read and len(mol_names) < self.__nlines:
+        if not self.__is_mol_full_names_read:
+            self.__mol_full_names.extend(mol_names)
+
+        # if EOF then stop updating the list of fragments and mol names (it is read only once)
+        if len(mol_names) < self.__nlines:
             self.__is_frag_full_names_read = True
+            self.__is_mol_full_names_read = True
 
         return mol_names, self.__varnames, np.asarray(x)
 
