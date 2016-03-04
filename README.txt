@@ -13,10 +13,11 @@ Features
 -----
 1. Easy to use straightforward workflow with GUI.
 2. Several fragmentation schemes to analyze contributions of:
-  a) all rings;
+  a) ring systems;
   b) Murcko scaffolds;
   c) common functional groups and rings;
-  d) user-defined fragments.
+  d) user-defined fragments;
+  e) automatically generated fragments (based on SMARTS pattern matched broken bonds).
 
 Manual
 -----
@@ -25,7 +26,8 @@ Short manual is included.
 Visualization of results
 -----
 1. Built-in visualization.
-2. External tool for nice visualization, plot customization and figure downloading - https://pavel.shinyapps.io/sirms-qsar-vis/
+2. rspci - R package for custom visualization (https://github.com/DrrDom/rspci)
+3. Online tool for visualization, plot customization and figure downloading (link will be published soon)
 
 Home page
 -----

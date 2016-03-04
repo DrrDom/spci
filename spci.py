@@ -726,7 +726,7 @@ class Tab_2(ttk.Frame):
 
         ttk.Radiobutton(frame, text='Default fragments', name='default_frag', value='default', variable=self.frags_choice).\
             grid(column=0, row=0, sticky=tk.W, padx=5, pady=(3, 1))
-        ttk.Radiobutton(frame, text='All rings', name='rings_frag', value='rings', variable=self.frags_choice).\
+        ttk.Radiobutton(frame, text='Ring systems', name='rings_frag', value='rings', variable=self.frags_choice).\
             grid(column=0, row=1, sticky=tk.W, padx=5, pady=(0, 1))
         # ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice, state='disabled').\
         #     grid(column=0, row=3, sticky=tk.W, padx=5, pady=(0, 1))
