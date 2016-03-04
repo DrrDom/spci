@@ -991,6 +991,8 @@ class Tab_4(ttk.Frame):
             shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
                             os.path.join(os.path.dirname(self.sdf_path_predict.get()), 'setup.txt'))
 
+            print("Descriptor calculation started")
+
             sirms.main_params(in_fname=sdf_fname,
                               out_fname=x_fname,
                               opt_no_dict=False,
@@ -999,13 +1001,15 @@ class Tab_4(ttk.Frame):
                               mix_fname=None,
                               opt_mix_ordered=None,
                               opt_ncores=1,
-                              opt_verbose=True,
+                              opt_verbose=False,
                               opt_noH=True,
                               frag_fname=None,
                               parse_stereo=False,
                               output_format='svm',
                               quasimix=False,
                               id_field_name=None)
+
+            print("Descriptor calculation finished")
 
         print("Prediction started")
 
