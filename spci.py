@@ -20,7 +20,6 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import font as tkfont
-from tkinter import messagebox
 from multiprocessing import cpu_count
 from subprocess import call
 from collections import OrderedDict
@@ -36,6 +35,7 @@ import calc_frag_contrib
 import plot_contributions
 import extractsdf
 import filter_descriptors
+import predict
 
 sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
 import sirms
@@ -499,7 +499,7 @@ class Tab_1(ttk.Frame):
         self.property_field_name = tk.StringVar()
         self.compound_names = tk.StringVar(value='gen')
 
-        chemaxon_frame = ttk.Labelframe(self, text='Structural/physico-chemical interpretation', name='chemaxon_frame')
+        chemaxon_frame = ttk.Labelframe(self, text='Structural/physico-chemical interpretation (result in different descriptors)', name='chemaxon_frame')
         chemaxon_frame.grid(column=0, row=0, sticky=(tk.E, tk.W), columnspan=4, padx=5, pady=5)
         ttk.Radiobutton(chemaxon_frame, text='Structural & functional (Chemaxon required)', variable=self.chemaxon_usage, value='with_chemaxon').grid(column=0, row=0, sticky=(tk.W), padx=5, pady=1)
         ttk.Radiobutton(chemaxon_frame, text='Structural only (no Chemaxon usage)', variable=self.chemaxon_usage, value='no_chemaxon').grid(column=0, row=1, sticky=(tk.W), padx=5, pady=1)
@@ -917,6 +917,132 @@ class Tab_3(ttk.Frame):
         parent.add(self, text=tab_name)
 
 
+class Tab_4(ttk.Frame):
+
+    def __select_sdf_path(self):
+        self.sdf_path_predict.set(filedialog.askopenfilename(filetypes=[('SDF files', '*.sdf')]))
+
+    def __read_sdf_history(self):
+        file_name = os.path.join(get_script_path(), 'history_pred.txt')
+        if os.path.isfile(file_name):
+            lines = open(file_name).readlines()
+            lines = [line.strip() for line in lines]
+            lines.reverse()
+            return lines
+
+    def __predict(self):
+
+        if self.sdf_path_predict.get() == '':
+            messagebox.showerror('ERROR!', 'Specify sdf filename and path.')
+            return
+
+        x_fname = os.path.splitext(self.sdf_path_predict.get())[0] + '_x.txt'
+
+        # if x.txt does not exist then do all standardization and descriptors calculation
+        use_x = False
+        if os.path.isfile(x_fname):
+            use_x = messagebox.askyesnocancel(message='It seems that folder with sdf file already contained calculated '
+                                                      'descriptors - %s. Do you want to use this file as descriptors '
+                                                      'for prediction?' % x_fname,
+                                              icon='question', default='yes')
+            if use_x is None:
+                return
+
+        project_dir = os.path.dirname(self.master.children['tab_1'].sdf_path.get())
+
+        if not use_x:  # generate descriptors
+
+            # standardization and property labeling
+            if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+
+                # standardize
+                print('Standardization is in progress...')
+                # run standardize
+                std_sdf_tmp = self.sdf_path_predict.get() + '.std.sdf'
+                run_params = ['standardize',
+                              '-c',
+                              os.path.join(project_dir, 'std_rules.xml'),
+                              self.sdf_path_predict.get(),
+                              '-f',
+                              'sdf',
+                              '-o',
+                              std_sdf_tmp]
+                call(' '.join(run_params), shell=True)
+
+                # calc atomic properties with Chemaxon
+                print('Atomic properties calculation is in progress...')
+                # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
+                output_sdf = self.sdf_path_predict.get().rsplit(".")[0] + '_std_lbl.sdf'
+                calc_atomic_properties_chemaxon.main_params(in_fname=std_sdf_tmp,
+                                                            out_fname=output_sdf,
+                                                            prop=['charge', 'logp', 'acc', 'don', 'refractivity'],
+                                                            pH=None,
+                                                            cxcalc_path='cxcalc')
+
+                os.remove(std_sdf_tmp)
+
+            if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+                atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
+                sdf_fname = output_sdf
+            else:
+                atom_diff = ['elm']
+                sdf_fname = self.sdf_path_predict.get()
+
+            shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
+                            os.path.join(os.path.dirname(self.sdf_path_predict.get()), 'setup.txt'))
+
+            sirms.main_params(in_fname=sdf_fname,
+                              out_fname=x_fname,
+                              opt_no_dict=False,
+                              opt_diff=atom_diff,
+                              opt_types=list(range(3, 12)),
+                              mix_fname=None,
+                              opt_mix_ordered=None,
+                              opt_ncores=1,
+                              opt_verbose=True,
+                              opt_noH=True,
+                              frag_fname=None,
+                              parse_stereo=False,
+                              output_format='svm',
+                              quasimix=False,
+                              id_field_name=None)
+
+        print("Prediction started")
+
+        predict.main_params(x_fname=x_fname,
+                            input_format='svm',
+                            out_fname=os.path.splitext(self.sdf_path_predict.get())[0] + '_' + self.master.children['tab_1'].property_field_name.get().strip() + '_pred.txt',
+                            train_x_fname=os.path.join(project_dir, 'x.txt'),
+                            train_format='svm',
+                            model_names=self.master.children['tab_1'].models_frame.get_selected_models(),
+                            model_dir=os.path.join(project_dir, self.master.children['tab_1'].property_field_name.get().strip(), 'models'),
+                            model_type=self.master.children['tab_1'].models_frame.model_type.get(),
+                            ad=['bound_box'],
+                            verbose=False)
+
+        print("Prediction finished")
+
+    def __init__(self, parent, tab_name):
+
+        ttk.Frame.__init__(self, parent, name='tab_4')
+
+        self.sdf_path_predict = tk.StringVar()
+
+        frame = ttk.Labelframe(self, text='SDF with compounds to predict', name='sdf_predict_label_frame')
+        frame.grid(column=0, row=2, sticky=(tk.E, tk.W), columnspan=2, padx=5, pady=5)
+        ttk.Label(frame, text='Path to SDF-file').grid(column=0, row=2, sticky=(tk.W, tk.S), padx=5)
+        # ttk.Entry(frame, width=70, textvariable=self.sdf_path).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
+        ttk.Combobox(frame, name='sdf_path_predict_combobox', width=70, textvariable=self.sdf_path_predict, values=self.__read_sdf_history()).grid(column=0, row=3, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
+        ttk.Button(frame, text='Browse...', command=self.__select_sdf_path).grid(column=1, row=3, sticky=(tk.W), padx=5, pady=(0, 5))
+
+        ttk.Label(self, text='*Predictions will be saved in the dir with the sdf-file specified above (<sdf_file_name>_<property_name>_pred.txt).').grid(column=0, row=7, sticky=(tk.W, tk.S), padx=5)
+        ttk.Label(self, text='**Models for predictions will be taken from the first tab as well as descriptors').grid(column=0, row=8, sticky=(tk.W, tk.S), padx=5)
+
+        ttk.Button(self, text='Predict', command=self.__predict).grid(column=0, row=10)
+
+        parent.add(self, text=tab_name)
+
+
 def main():
 
     root = tk.Tk()
@@ -930,6 +1056,7 @@ def main():
     tab_1 = Tab_1(tabs, 'Build models')
     tab_2 = Tab_2(tabs, 'Calc contributions')
     tab_3 = Tab_3(tabs, 'Plot contributions')
+    tab_4 = Tab_4(tabs, 'Predict')
 
     content.grid(column=0, row=0, sticky=(tk.W, tk.N, tk.E, tk.S))
     tabs.grid(column=0, row=0, sticky=(tk.W, tk.N, tk.E, tk.S))
