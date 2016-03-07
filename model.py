@@ -72,13 +72,15 @@ def mean(l):
 
 
 def get_sensitivity(obs, pred, classes=(0, 1)):
-    tp = sum(obs + pred == 2 * classes[1])
+    tp = sum(np.logical_and((pred == classes[1]), (obs == pred)))
+    # tp = sum(obs + pred == 2 * classes[1])
     t = sum(obs == classes[1])
     return tp/t
 
 
 def get_specificity(obs, pred, classes=(0, 1)):
-    tn = sum(obs + pred == 2 * classes[0])
+    tn = np.logical_and((pred == classes[0]), (obs == pred))
+    # tn = sum(obs + pred == 2 * classes[0])
     n = sum(obs == classes[0])
     return tn/n
 
@@ -106,11 +108,12 @@ def calc_model_stat_2(y, pred, model_type):
     if model_type == 'reg':
 
         d = {"r2": get_r2_test(y, pred, mean(y)),
-             "mse": get_mse(y, pred)}
+             "mse": get_mse(y, pred),
+             "rmse": get_mse(y, pred) ** 0.5}
 
     elif model_type == 'class':
 
-        d = {"accuracy": (get_sensitivity(y, pred) + get_specificity(y, pred)) / 2,
+        d = {"balanced accuracy": (get_sensitivity(y, pred) + get_specificity(y, pred)) / 2,
              "sensitivity": get_sensitivity(y, pred),
              "specificity": get_specificity(y, pred),
              "kappa": get_kappa(y, pred)}
@@ -128,16 +131,16 @@ def save_model_stat_2(model_name, file_name, model_params, y, pred, model_type, 
 
     else:
         if model_type == 'reg':
-            lines = ["Regression\n", "Time\tModel\tR2\tMSE\tOptimal_parameters\n"]
+            lines = ["Regression\n", "Time\tModel\tR2\tRMSE\tMSE\tOptimal_parameters\n"]
         elif model_type == 'class':
-            lines = ["Classification\n", "Time\tModel\tAccuracy\tSensitivity\tSpecificity\tKappa\tOptimal_parameters\n"]
+            lines = ["Classification\n", "Time\tModel\tBalanced accuracy\tSensitivity\tSpecificity\tKappa\tOptimal_parameters\n"]
 
     if model_type == 'reg':
         lines.append(strftime("%Y-%m-%d %H:%M:%S") + "\t" + model_name + "\t" + "{0:.2f}".format(d["r2"]) + "\t" +
-             "{0:.2f}".format(d["mse"]) + "\t" + model_params + "\n")
+             "{0:.2f}".format(d["rmse"]) + "\t" + "{0:.2f}".format(d["mse"]) + "\t" + model_params + "\n")
 
     elif model_type == 'class':
-        lines.append(strftime("%Y-%m-%d %H:%M:%S") + "\t" + model_name + "\t" + "{0:.2f}".format(d["accuracy"]) + "\t" +
+        lines.append(strftime("%Y-%m-%d %H:%M:%S") + "\t" + model_name + "\t" + "{0:.2f}".format(d["balanced accuracy"]) + "\t" +
                      "{0:.2f}".format(d["sensitivity"]) + "\t" + "{0:.2f}".format(d["specificity"]) + "\t" +
                      "{0:.2f}".format(d["kappa"]) + "\t" +model_params + "\n")
 
@@ -292,7 +295,7 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
                        fmt="%s",
                        delimiter="\t",
                        comments="",
-                       header="Mol\tObs\t" + "\t" + current_model)
+                       header="Mol\tObs\t" + current_model)
 
         if verbose:
             print(current_model.upper() + ' model was built\n')

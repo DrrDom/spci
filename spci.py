@@ -343,6 +343,9 @@ class Tab_1(ttk.Frame):
             else:
                 atom_diff = ['elm']
             x_fname = os.path.join(os.path.dirname(output_sdf), 'x.txt')
+
+            print("Descriptors calculation started. Please wait it can take some time")
+
             sirms.main_params(in_fname=output_sdf,
                               out_fname=x_fname,
                               opt_no_dict=False,
@@ -351,7 +354,7 @@ class Tab_1(ttk.Frame):
                               mix_fname=None,
                               opt_mix_ordered=None,
                               opt_ncores=1,
-                              opt_verbose=True,
+                              opt_verbose=False,
                               opt_noH=True,
                               frag_fname=None,
                               parse_stereo=False,
@@ -363,6 +366,8 @@ class Tab_1(ttk.Frame):
             filter_descriptors.main_params(in_fname=x_fname,
                                            out_fname=x_fname,
                                            file_format='svm')
+
+            print("Descriptors calculation finished")
 
         else:
             x_fname = os.path.join(os.path.dirname(self.sdf_path.get()), 'x.txt')
@@ -395,7 +400,6 @@ class Tab_1(ttk.Frame):
                           model_names=self.models_frame.get_selected_models(),
                           models_dir=models_dir,
                           ncores=self.sb_cpu_count.get_value(),
-                          # ncores=max(1, cpu_count() - 1),
                           model_type=self.models_frame.model_type.get(),
                           verbose=1,
                           cv_predictions=True,
