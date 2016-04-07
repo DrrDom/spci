@@ -79,7 +79,7 @@ def get_sensitivity(obs, pred, classes=(0, 1)):
 
 
 def get_specificity(obs, pred, classes=(0, 1)):
-    tn = np.logical_and((pred == classes[0]), (obs == pred))
+    tn = sum(np.logical_and((pred == classes[0]), (obs == pred)))
     # tn = sum(obs + pred == 2 * classes[0])
     n = sum(obs == classes[0])
     return tn/n
