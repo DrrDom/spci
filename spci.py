@@ -661,7 +661,7 @@ class Tab_2(ttk.Frame):
                               mix_fname=None,
                               opt_mix_ordered=None,
                               opt_ncores=1,
-                              opt_verbose=True,
+                              opt_verbose=False,
                               opt_noH=True,
                               frag_fname=ids_fname,
                               parse_stereo=False,
