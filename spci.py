@@ -653,6 +653,8 @@ class Tab_2(ttk.Frame):
             else:
                 x_fname = os.path.join(main_dir, self.get_frag_prefix() + '_frag_x.txt')
 
+            print("Descriptors calculation started. Please wait it can take some time")
+
             sirms.main_params(in_fname=sdf_fname,
                               out_fname=x_fname,
                               opt_no_dict=False,
