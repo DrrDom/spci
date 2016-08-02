@@ -342,9 +342,9 @@ def main():
         if o == "cv_predictions": cv_predictions = v
         if o == "descriptors_format": input_format = v
         if o == "models_dir": models_dir = v
-        if input_format not in ['txt', 'svm']:
-            print("Input file format is wrong - %s. Only txt and svm are allowed." % input_format)
-            exit()
+    if input_format not in ['txt', 'svm']:
+        print("Input file format is wrong - %s. Only txt and svm are allowed." % input_format)
+        exit()
 
     main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, verbose, cv_predictions, input_format)
 
