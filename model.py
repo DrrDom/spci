@@ -334,7 +334,7 @@ def main():
             if v == 'all':
                 ncores = cpu_count()
             else:
-                ncores = int(str)
+                ncores = int(v)
                 if ncores > cpu_count():
                     ncores = cpu_count()
         if o == "model_type": model_type = v
