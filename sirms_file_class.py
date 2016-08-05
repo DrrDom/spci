@@ -20,7 +20,7 @@ class SirmsFile():
 
         if file_format == 'txt':
             self.__varnames = open(fname).readline().strip().split('\t')[1:]
-            self.____mol_full_names = []         # keep the names of all molecules which were read
+            self.__mol_full_names = []           # keep the names of all molecules which were read
             self.__frag_full_names = []          # keep the names of all fragments which were read
                                                  # order is important since calculated contributions are saved in
                                                  # the same order (mol1###frag1, ...) (not mol1###frag1#1)
