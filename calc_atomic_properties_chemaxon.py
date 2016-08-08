@@ -13,6 +13,10 @@ import argparse
 from subprocess import call
 
 
+def quote_str(s):
+    return "'%s'" % s
+
+
 def add_pH(params, pH):
     if pH is not None:
         params.extend(["-H", pH])
@@ -47,12 +51,12 @@ def add_HB(molstr):
 
 def main_params(in_fname, out_fname, prop, pH, cxcalc_path):
 
-    start_params = [cxcalc_path]
-    start_params.extend(["-o", out_fname])
+    start_params = [quote_str(cxcalc_path)]
+    start_params.extend(["-o", quote_str(out_fname)])
     start_params.append("-S")
     log_fname = os.path.splitext(out_fname)[0] + "_cxcalc.log"
-    start_params.extend(["--log", log_fname])
-    start_params.append(in_fname)
+    start_params.extend(["--log", quote_str(log_fname)])
+    start_params.append(quote_str(in_fname))
 
     # logp, charge, atom_polarizability, refractivity, acc, don
     run_params = start_params[:]

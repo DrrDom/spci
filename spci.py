@@ -45,6 +45,10 @@ def get_script_path():
     return os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
+def quote_str(s):
+    return "'%s'" % s
+
+
 class StatWindow(tk.Toplevel):
 
 # it's a magic
@@ -304,12 +308,12 @@ class Tab_1(ttk.Frame):
                 std_sdf_tmp = input_sdf + '.std.sdf'
                 run_params = ['standardize',
                               '-c',
-                              os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'),
-                              input_sdf,
+                              quote_str(os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml')),
+                              quote_str(input_sdf),
                               '-f',
                               'sdf',
                               '-o',
-                              std_sdf_tmp]
+                              quote_str(std_sdf_tmp)]
                 call(' '.join(run_params), shell=True)
 
                 # calc atomic properties with Chemaxon
@@ -967,12 +971,12 @@ class Tab_4(ttk.Frame):
                 std_sdf_tmp = self.sdf_path_predict.get() + '.std.sdf'
                 run_params = ['standardize',
                               '-c',
-                              os.path.join(project_dir, 'std_rules.xml'),
-                              self.sdf_path_predict.get(),
+                              quote_str(os.path.join(project_dir, 'std_rules.xml')),
+                              quote_str(self.sdf_path_predict.get()),
                               '-f',
                               'sdf',
                               '-o',
-                              std_sdf_tmp]
+                              quote_str(std_sdf_tmp)]
                 call(' '.join(run_params), shell=True)
 
                 # calc atomic properties with Chemaxon
