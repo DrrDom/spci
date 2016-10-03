@@ -335,7 +335,10 @@ class Tab_1(ttk.Frame):
                 output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
                 if os.path.isfile(output_sdf):
                     os.remove(output_sdf)
-                os.rename(tmp_sdf, output_sdf)
+                if tmp_sdf is None:
+                    shutil.copyfile(input_sdf, output_sdf)
+                else:
+                    os.rename(tmp_sdf, output_sdf)
 
             # copy setup.txt to folder with sdf file
             shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
