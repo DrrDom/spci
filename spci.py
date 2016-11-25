@@ -355,19 +355,26 @@ class Tab_1(ttk.Frame):
 
             sirms.main_params(in_fname=output_sdf,
                               out_fname=x_fname,
-                              opt_no_dict=False,
                               opt_diff=atom_diff,
-                              opt_types=list(range(3, 12)),
+                              min_num_atoms=2,
+                              max_num_atoms=4,
+                              min_num_components=1,
+                              max_num_components=2,
+                              min_num_mix_components=2,
+                              max_num_mix_components=2,
                               mix_fname=None,
-                              opt_mix_ordered=None,
-                              opt_ncores=1,
+                              descriptors_transformation='num',
+                              mix_type='abs',
+                              opt_mix_ordered=False,
                               opt_verbose=False,
                               opt_noH=True,
                               frag_fname=None,
-                              parse_stereo=False,
-                              output_format='svm',
+                              per_atom_fragments=False,
+                              self_association_mix=False,
+                              reaction_diff=False,
                               quasimix=False,
-                              id_field_name=None)
+                              id_field_name=None,
+                              output_format='svm')
 
             # filter sirms descriptors
             filter_descriptors.main_params(in_fname=x_fname,
@@ -419,7 +426,7 @@ class Tab_1(ttk.Frame):
         win = StatWindow(self)
         win.fill_data(os.path.join(os.path.dirname(self.sdf_path.get()),
                                    self.property_field_name.get().strip(),
-                                   'models\\models_stat.txt'))
+                                   'models', 'models_stat.txt'))
 
     def __add_sdf_path_to_history(self, sdf_path):
         if sdf_path is None or sdf_path == "":
@@ -664,19 +671,27 @@ class Tab_2(ttk.Frame):
 
             sirms.main_params(in_fname=sdf_fname,
                               out_fname=x_fname,
-                              opt_no_dict=False,
                               opt_diff=atom_diff,
-                              opt_types=list(range(3, 12)),
+                              min_num_atoms=2,
+                              max_num_atoms=4,
+                              min_num_components=1,
+                              max_num_components=2,
+                              min_num_mix_components=2,
+                              max_num_mix_components=2,
                               mix_fname=None,
-                              opt_mix_ordered=None,
-                              opt_ncores=1,
+                              descriptors_transformation='num',
+                              mix_type='abs',
+                              opt_mix_ordered=False,
                               opt_verbose=False,
                               opt_noH=True,
                               frag_fname=ids_fname,
-                              parse_stereo=False,
-                              output_format='svm',
+                              per_atom_fragments=False,
+                              self_association_mix=False,
+                              reaction_diff=False,
                               quasimix=False,
-                              id_field_name=None)
+                              id_field_name=None,
+                              output_format='svm')
+
 
             # filter sirms descriptors
             filter_descriptors.main_params(in_fname=x_fname,
@@ -1008,19 +1023,26 @@ class Tab_4(ttk.Frame):
 
             sirms.main_params(in_fname=sdf_fname,
                               out_fname=x_fname,
-                              opt_no_dict=False,
                               opt_diff=atom_diff,
-                              opt_types=list(range(3, 12)),
+                              min_num_atoms=2,
+                              max_num_atoms=4,
+                              min_num_components=1,
+                              max_num_components=2,
+                              min_num_mix_components=2,
+                              max_num_mix_components=2,
                               mix_fname=None,
-                              opt_mix_ordered=None,
-                              opt_ncores=1,
+                              descriptors_transformation='num',
+                              mix_type='abs',
+                              opt_mix_ordered=False,
                               opt_verbose=False,
                               opt_noH=True,
                               frag_fname=None,
-                              parse_stereo=False,
-                              output_format='svm',
+                              per_atom_fragments=False,
+                              self_association_mix=False,
+                              reaction_diff=False,
                               quasimix=False,
-                              id_field_name=None)
+                              id_field_name=None,
+                              output_format='svm')
 
             print("Descriptor calculation finished")
 

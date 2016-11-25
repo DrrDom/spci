@@ -165,7 +165,7 @@ def main():
         if o == "in": in_sdf = v
         if o == "out": out_txt = v
         if o == "query": query = v
-        if o == "upper_cuts_number": max_cuts = v
+        if o == "upper_cuts_number": max_cuts = int(v)
         if o == "verbose": verbose = v
         if o == "error_file": error_fname = v
 
