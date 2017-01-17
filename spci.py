@@ -9,6 +9,7 @@
 #==============================================================================
 
 import os
+import re
 from runpy import run_path
 import sys
 import ast
@@ -476,14 +477,14 @@ class Tab_1(ttk.Frame):
         if not os.path.isfile(fname):
             messagebox.showerror('ERROR!', "Specified file name doesn't exist.")
             return field_names
+        field_pattern = "^> +<(.*)>( *\([0-9]*\) *)?$"
+        m = re.compile(field_pattern)
         with open(fname) as f:
             line = f.readline().rstrip()
             while line != '$$$$':
                 # one or two spaces between > and < can be possible
-                if line.startswith('>  <') and line.endswith('>'):
-                    field_names.append(line[4:-1])
-                if line.startswith('> <') and line.endswith('>'):
-                    field_names.append(line[3:-1])
+                if m.match(line):
+                    field_names.append(re.sub(field_pattern, "\\1", line))
                 line = f.readline().rstrip()
         return field_names
 
