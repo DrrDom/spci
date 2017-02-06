@@ -38,7 +38,7 @@ def main_params(in_fname, out_fname, title, field_names, all_fields):
                     field_name = line.strip()[start:-1]
                     output[-1][field_name] = ifs.readline().strip()
 
-                else:
+                elif field_names is not None:
                     for field_name in field_names:
                         if line.find("<" + field_name + ">") >= 0:
                             output[-1][field_name] = ifs.readline().strip()
@@ -80,7 +80,8 @@ def main():
                         help='output text file with values of specified fields')
     parser.add_argument('-t', '--title', action='store_true', default=False,
                         help='If true molecules titles will be extracted')
-    parser.add_argument('-f', '--field_names', metavar='[field_name_1 field_name_2 ...]', required=False, nargs='*',
+    parser.add_argument('-f', '--field_names', metavar='[field_name_1 field_name_2 ...]',
+                        required=False, default=None, nargs='*',
                         help='space separated list of field names for extraction')
     parser.add_argument('-a', '--all_fields', action='store_true', default=False,
                         help='If set (true) all fields will be extracted.')
