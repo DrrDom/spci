@@ -1052,8 +1052,6 @@ class Tab_4(ttk.Frame):
         predict.main_params(x_fname=x_fname,
                             input_format='svm',
                             out_fname=os.path.splitext(self.sdf_path_predict.get())[0] + '_' + self.master.children['tab_1'].property_field_name.get().strip() + '_pred.txt',
-                            train_x_fname=os.path.join(project_dir, 'x.txt'),
-                            train_format='svm',
                             model_names=self.master.children['tab_1'].models_frame.get_selected_models(),
                             model_dir=os.path.join(project_dir, self.master.children['tab_1'].property_field_name.get().strip(), 'models'),
                             model_type=self.master.children['tab_1'].models_frame.model_type.get(),

@@ -150,7 +150,7 @@ def save_model_stat_2(model_name, file_name, model_params, y, pred, model_type, 
     open(file_name, "wt").writelines(lines)
 
 
-def create_bound_box_constrains(x, fname):
+def save_bound_box_constrains(x, fname):
     d = dict()
     d['min_values'] = tuple(np.amin(x, axis=0))
     d['max_values'] = tuple(np.amax(x, axis=0))
@@ -178,7 +178,9 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
         print("Illegal value of input format: " % input_format)
         exit()
 
-    create_bound_box_constrains(x, os.path.join(models_dir, "bound_box.pkl"))
+    save_bound_box_constrains(x, os.path.join(models_dir, "bound_box.pkl"))
+
+    save_object(descr_names, os.path.join(models_dir, "var_names.pkl"))
 
     scale = StandardScaler().fit(x)
     save_object(scale, os.path.join(models_dir, "scale.pkl"))

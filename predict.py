@@ -107,7 +107,7 @@ def check_bound_box(x, bound_box_constrains):
     #               axis=1).tolist()
 
 
-def main_params(x_fname, input_format, out_fname, train_x_fname, train_format, model_names, model_dir, model_type, ad, verbose):
+def main_params(x_fname, input_format, out_fname, model_names, model_dir, model_type, ad, verbose):
 
     if ad is not None:
         ad_dict = {item: [] for item in ad}
@@ -129,7 +129,7 @@ def main_params(x_fname, input_format, out_fname, train_x_fname, train_format, m
         models[m] = joblib.load(os.path.join(model_dir, m + ".pkl"))
 
     input_sirms_file = SirmsFile(x_fname, file_format=input_format, chunks=1000)
-    ref_var_names = get_var_names(train_x_fname, train_format)
+    ref_var_names = joblib.load(os.path.join(model_dir, "var_names.pkl"))
 
     input_sirms_file.reset_read()
     mol_names, var_names, x = input_sirms_file.read_next()
@@ -167,10 +167,10 @@ def main():
                         help='format of the input file with descriptors (txt|svm). Default: txt.')
     parser.add_argument('-o', '--output', metavar='predictions.txt', required=True,
                         help='output text file with fragments contributions.')
-    parser.add_argument('-r', '--training_set', metavar='training_set_descriptors.txt', required=True,
-                        help='text file with descriptors nad their names of training set compounds.')
-    parser.add_argument('--train_format', metavar='txt|svm', required=False, default='txt',
-                        help='format of the input file with descriptors (txt|svm). Default: txt.')
+    # parser.add_argument('-r', '--training_set', metavar='training_set_descriptors.txt', required=True,
+    #                     help='text file with descriptors nad their names of training set compounds.')
+    # parser.add_argument('--train_format', metavar='txt|svm', required=False, default='txt',
+    #                     help='format of the input file with descriptors (txt|svm). Default: txt.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svr pls knn]', required=True, nargs='*',
                         help='file names of saved models (without extension).')
     parser.add_argument('-d', '--models_dir', metavar='path_to_models', required=True,
@@ -189,8 +189,8 @@ def main():
         if o == "input": x_fname = v
         if o == "input_format": input_format = v
         if o == "output": out_fname = v
-        if o == "training_set": train_x_fname = v
-        if o == "train_format": train_format = v
+        # if o == "training_set": train_x_fname = v
+        # if o == "train_format": train_format = v
         if o == "models": model_names = v
         if o == "models_dir": model_dir = v
         if o == "model_type": model_type = v
@@ -201,7 +201,7 @@ def main():
         if not ad:
             ad = None
 
-    main_params(x_fname, input_format, out_fname, train_x_fname, train_format, model_names, model_dir, model_type, ad, verbose)
+    main_params(x_fname, input_format, out_fname, model_names, model_dir, model_type, ad, verbose)
 
 
 if __name__ == '__main__':
