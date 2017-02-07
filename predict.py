@@ -90,37 +90,9 @@ def save_predictions(fname, pred_array, pred_model_names, mol_names, ad_dict):
     np.savetxt(fname, pred_array, '%s', delimiter='\t', header='\t'.join(pred_model_names))
 
 
-def get_bound_box_constrains(x_fname, fformat):
-    min_output = max_output = None
-    if fformat == 'txt':
-        with open(x_fname) as f:
-            header = f.readline()
-            min_output = [0] * (len(header.split('\t')) - 1)
-            max_output = [0] * (len(header.split('\t')) - 1)
-            for line in f:
-                items = tuple(map(float, line.strip().split('\t')[1:]))
-                for i in range(len(items)):
-                    if items[i] < min_output[i]:
-                        min_output[i] = items[i]
-                    elif items[i] > max_output[i]:
-                        max_output[i] = items[i]
-        return tuple(min_output), tuple(max_output)
-    elif fformat == 'svm':
-        with open(x_fname) as f:
-            min_output = defaultdict(int)
-            max_output = defaultdict(int)
-            for line in f:
-                items = line.strip().split(' ')
-                for item in items:
-                    k, v = item.split(':')
-                    k = int(k)
-                    v = float(v)
-                    if v < min_output[k]:
-                        min_output[k] = v
-                    elif v > max_output[k]:
-                        max_output[k] = v
-        return tuple(min_output[k] for k in sorted(min_output.keys())), \
-               tuple(max_output[k] for k in sorted(max_output.keys()))
+def load_bound_box_constrains(fname):
+    d = joblib.load(fname)
+    return d['min_values'], d['max_values']
 
 
 def check_bound_box(x, bound_box_constrains):
@@ -139,7 +111,7 @@ def main_params(x_fname, input_format, out_fname, train_x_fname, train_format, m
 
     if ad is not None:
         ad_dict = {item: [] for item in ad}
-        bound_box_constrains = get_bound_box_constrains(train_x_fname, train_format)
+        bound_box_constrains = load_bound_box_constrains(os.path.join(model_dir, "bound_box.pkl"))
     else:
         ad_dict = None
 
