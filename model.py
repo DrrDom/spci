@@ -64,7 +64,7 @@ def load_y(fname):
 
 
 def save_object(model, fname):
-    joblib.dump(model, fname, compress=1, cache_size=1e8)
+    joblib.dump(model, fname, compress=3, cache_size=1e8)
 
 
 def mean(l):
