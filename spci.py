@@ -725,7 +725,8 @@ class Tab_2(ttk.Frame):
                                       verbose=True,
                                       save_pred=True,
                                       input_format='svm',
-                                      long_format=False)
+                                      long_format=False,
+                                      save_frag_ids=False)
 
         print("Calculation completed.")
 

@@ -15,9 +15,9 @@ import numpy as np
 from sklearn.externals import joblib
 from collections import defaultdict, OrderedDict
 
-from sirms_file_class import SirmsFile
+from sirms_file_class import SirmsFile, mol_frag_sep
 
-mol_frag_sep = "###"
+# mol_frag_sep = "###"
 
 
 def load_sirms(fname):
@@ -64,21 +64,34 @@ def prepare_dataset(x_train, x_frag, prop_name, descr_names, x_train_mol_names, 
     return output
 
 
-def save_contrib(fname, contrib_dict, frag_full_names, long_format):
+def save_contrib(fname, contrib_dict, frag_full_names, long_format, save_frag_ids):
+    if save_frag_ids:
+        frag_names = frag_full_names
+    else:
+        frag_names = [v.rsplit('#', 1)[0] for v in frag_full_names if v.find(mol_frag_sep) > -1]
+
     if not long_format:
         with open(fname, "wt") as f:
-            f.write("Model_Contribution\t" + "\t".join(frag_full_names) + "\n")
+            f.write("Model_Contribution\t" + "\t".join(frag_names) + "\n")
             for model_name in contrib_dict.keys():
                 for prop_name in contrib_dict[model_name].keys():
                     f.write(model_name + "_" + prop_name + "\t" +
                             "\t".join(["{0:.6f}".format(i) for i in contrib_dict[model_name][prop_name]]) + "\n")
     else:
         with open(fname, "wt") as f:
-            f.write("Compound\tFragment\tModel\tContribution_type\tContribution_value\n")
+            if save_frag_ids:
+                f.write("Compound\tFragment\tFrag_id\tModel\tContribution_type\tContribution_value\n")
+            else:
+                f.write("Compound\tFragment\tModel\tContribution_type\tContribution_value\n")
             for model_name in contrib_dict.keys():
                 for prop_name in contrib_dict[model_name].keys():
-                    for frag_full_name, value in zip(frag_full_names, contrib_dict[model_name][prop_name]):
-                        f.write('\t'.join(frag_full_name.split(mol_frag_sep)) + '\t' + model_name + '\t' + prop_name + '\t' + "{0:.6f}".format(value) + '\n')
+                    for frag_full_name, value in zip(frag_names, contrib_dict[model_name][prop_name]):
+                        if save_frag_ids and frag_full_name.find(mol_frag_sep) > -1:
+                            mol_name, frag_name = frag_full_name.split(mol_frag_sep)
+                            frag_name, frag_id = frag_name.rsplit('#', 1)
+                            f.write('\t'.join((mol_name, frag_name, frag_id, model_name, prop_name, "{0:.6f}".format(value))) + '\n')
+                        else:
+                            f.write('\t'.join(frag_full_name.split(mol_frag_sep)) + '\t' + model_name + '\t' + prop_name + '\t' + "{0:.6f}".format(value) + '\n')
 
 
 def predict(x, model, model_name, model_type):
@@ -98,7 +111,8 @@ def predict(x, model, model_name, model_type):
     return pred
 
 
-def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format, long_format):
+def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format,
+                long_format, save_frag_ids):
 
     if save_pred:
         save_pred_fname = os.path.splitext(out_fname)[0] + "_pred.txt"
@@ -189,7 +203,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     #
     #             frag_contrib[model_name][prop_name] = [xtrain_pred[mol_name] - xfrag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)]
 
-    save_contrib(out_fname, frag_contrib, sirms_file.get_frag_full_names(), long_format)
+    save_contrib(out_fname, frag_contrib, sirms_file.get_frag_full_names(), long_format, save_frag_ids)
 
 
 def main():
@@ -197,7 +211,7 @@ def main():
     parser = argparse.ArgumentParser(description='Calculate contributions of molecular fragments based on QSAR models.')
     parser.add_argument('-i', '--input', metavar='frag_descriptors.txt', required=True,
                         help='input text file with descriptors for compounds with removed fragments.')
-    parser.add_argument('-f', '--input_format', metavar='txt', default='txt',
+    parser.add_argument('-f', '--input_format', metavar='txt|svm', default='txt',
                         help='format of input file with descriptors for compounds with removed fragments (txt|svm). '
                              'Svm sparse format file ha to have two files with the same name and extensions '
                              'rownames and colnames. Default: txt.')
@@ -219,6 +233,10 @@ def main():
                         help='show progress on the screen.')
     parser.add_argument('-s', '--save_intermediate_prediction', action='store_true', default=False,
                         help='save intermediate prediction to text file.')
+    parser.add_argument('--save_frag_ids', action='store_true', default=False,
+                        help='save frag id in each molecule. For wide format output (default) it will return '
+                             'frag_name#frag_id. For long format output it will return additional column named '
+                             'Frag_ID.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():
@@ -232,11 +250,13 @@ def main():
         if o == "save_intermediate_prediction": save_pred = v
         if o == "input_format": input_format = v
         if o == "output_long_format": long_format = v
+        if o == "save_frag_ids": save_frag_ids = v
     if input_format not in ['txt', 'svm']:
         print("Wrong input file format - %s. Only txt and svm file formats are allowed." % input_format)
         exit()
 
-    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format, long_format)
+    main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred,
+                input_format, long_format, save_frag_ids)
 
 
 if __name__ == '__main__':

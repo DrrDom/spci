@@ -23,14 +23,14 @@ class SirmsFile():
             self.__mol_full_names = []           # keep the names of all molecules which were read
             self.__frag_full_names = []          # keep the names of all fragments which were read
                                                  # order is important since calculated contributions are saved in
-                                                 # the same order (mol1###frag1, ...) (not mol1###frag1#1)
+                                                 # the same order (mol1###frag1#1 <- frag id is present)
             self.__is_mol_full_names_read = False
             self.__is_frag_full_names_read = False
 
         elif file_format == 'svm':
             self.__varnames = [v.strip() for v in open(os.path.splitext(fname)[0] + '.colnames').readlines()]
             self.__mol_full_names = [v.strip() for v in open(os.path.splitext(fname)[0] + '.rownames').readlines()]
-            self.__frag_full_names = [v.rsplit('#', 1)[0] for v in self.__mol_full_names if v.find(mol_frag_sep) > -1]
+            self.__frag_full_names = [v for v in self.__mol_full_names if v.find(mol_frag_sep) > -1]
             self.__is_frag_full_names_read = True
 
         self.__file = open(fname)
@@ -115,7 +115,7 @@ class SirmsFile():
 
         # add read frag names to the list (remain only mol name and frag name, e.g. mol1#frag1, not mol1#frag1#1)
         if not self.__is_frag_full_names_read:
-            self.__frag_full_names.extend([mol_name.rsplit('#', 1)[0] for mol_name in mol_names if mol_name.find(mol_frag_sep) > -1])
+            self.__frag_full_names.extend([mol_name for mol_name in mol_names if mol_name.find(mol_frag_sep) > -1])
 
         if not self.__is_mol_full_names_read:
             self.__mol_full_names.extend(mol_names)
