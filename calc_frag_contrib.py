@@ -94,6 +94,31 @@ def save_contrib(fname, contrib_dict, frag_full_names, long_format, save_frag_id
                             f.write('\t'.join(frag_full_name.split(mol_frag_sep)) + '\t' + model_name + '\t' + prop_name + '\t' + "{0:.6f}".format(value) + '\n')
 
 
+def adjust_dataset(x, x_col_names, ref_col_names, default_value=0):
+
+    # init output with default value
+    if default_value != 0:
+        output = np.empty((np.shape(x)[0], len(ref_col_names)))
+        output.fill(default_value)
+    else:
+        output = np.zeros((np.shape(x)[0], len(ref_col_names)))
+
+    # get indices in output (-1 means no such column in output)
+    ids = [-1] * len(x_col_names)
+    for i, col in enumerate(x_col_names):
+        try:
+            ids[i] = ref_col_names.index(col)
+        except ValueError:
+            pass
+
+    keep_cols = [i != -1 for i in ids]
+    ids = [i for i in ids if i != -1]
+
+    output[::, np.array(ids)] = x[::, np.array(keep_cols)]
+
+    return output
+
+
 def predict(x, model, model_name, model_type):
 
     pred = None
@@ -131,6 +156,9 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     # frag_contrib = dict()
     frag_contrib = OrderedDict()
 
+    # for adjusting data sets before prediction (solving different order of descriptors)
+    ref_var_names = joblib.load(os.path.join(model_dir, "var_names.pkl"))
+
     if model_type == 'reg' or model_type == 'class':
 
         for model_name in model_names:
@@ -146,6 +174,9 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
             mol_names, var_names, x = sirms_file.read_next()
 
             while mol_names:
+
+                x = adjust_dataset(x, var_names, ref_var_names)
+                var_names = ref_var_names[:]
 
                 if scale is not None:
                     x = scale.transform(x)
