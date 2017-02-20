@@ -375,7 +375,8 @@ class Tab_1(ttk.Frame):
                               reaction_diff=False,
                               quasimix=False,
                               id_field_name=None,
-                              output_format='svm')
+                              output_format='svm',
+                              ncores=min(10, max(self.sb_cpu_count.get_value(), 1)))
 
             # filter sirms descriptors
             filter_descriptors.main_params(in_fname=x_fname,
@@ -691,7 +692,8 @@ class Tab_2(ttk.Frame):
                               reaction_diff=False,
                               quasimix=False,
                               id_field_name=None,
-                              output_format='svm')
+                              output_format='svm',
+                              ncores=min(10, max(self.master.children['tab_1'].sb_cpu_count.get_value(), 1)))
 
 
             # filter sirms descriptors
@@ -850,6 +852,8 @@ class Tab_3(ttk.Frame):
             if os.path.isdir(models_dir):
                 files = [f[:-4] for f in os.listdir(models_dir) if f.endswith('.pkl')]
                 files.remove('scale')
+                files.remove('bound_box')
+                files.remove('var_names')
                 return files
             else:
                 return None
@@ -1044,7 +1048,8 @@ class Tab_4(ttk.Frame):
                               reaction_diff=False,
                               quasimix=False,
                               id_field_name=None,
-                              output_format='svm')
+                              output_format='svm',
+                              ncores=min(10, max(self.master.children['tab_1'].sb_cpu_count.get_value(), 1)))
 
             print("Descriptor calculation finished")
 
