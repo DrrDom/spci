@@ -52,6 +52,10 @@ def frag_mol_by_cuts(mol, cut_list):
 
     for ids in Chem.GetMolFrags(mol):
         cansmi = Chem.MolFragmentToSmiles(mol, atomsToUse=ids)
+        # remove Hs
+        cansmi = cansmi.replace("([H])", "").replace("[H]", "")
+        if cansmi == "[*]":
+            continue
         # cansmi = fix_cansmi_attach_point(cansmi)
         ids = [i for i in ids if i not in ap_ids]
         output.append([cansmi, ids])
