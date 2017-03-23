@@ -40,7 +40,7 @@ class SirmsFile():
         self.__is_frag_file = frag_file      # set which file to read ordinary (False) or with fragments (True)
                                              # in the latter case each chunk will contain all fragments for each
                                              # read molecules (another reading process)
-        self.__cur_mol_read = 0              # number of mol already read
+        self.__cur_mol_read = 0              # number of mols (lines) already read (or index of line to read)
 
     def get_frag_full_names(self):
         return self.__frag_full_names
@@ -53,26 +53,30 @@ class SirmsFile():
         self.__file.seek(0)
 
     def __read_svm_next(self):
-        start = self.__cur_mol_read
-        end = start + self.__nlines
-        if end > len(self.__mol_full_names):
-            end = len(self.__mol_full_names)
-        cur_mol = self.__mol_full_names[end - 1].split(mol_frag_sep)[0]
-        end += 1
-        while end < len(self.__mol_full_names) and self.__mol_full_names[end - 1].split(mol_frag_sep)[0] == cur_mol:
-            end += 1
-        end -= 2
-        lines = [self.__file.readline().strip() for _ in range(start, end + 1)]
-        x = []
-        for line in lines:
-            out = [0] * len(self.__varnames)
-            for entry in line.split():
-                index, value = entry.split(':')
-                out[int(index)] = float(value)
-            x.append(out)
-        x = np.asarray(x)
-        self.__cur_mol_read = end + 1
-        return self.__mol_full_names[start:end + 1], self.__varnames, x
+        if self.__cur_mol_read == len(self.__mol_full_names):
+            return [], self.__varnames, np.asarray([])
+        else:
+            start = self.__cur_mol_read
+            end = start + self.__nlines
+            if end > len(self.__mol_full_names):
+                end = len(self.__mol_full_names)
+            else:
+                cur_mol = self.__mol_full_names[end - 1].split(mol_frag_sep)[0]
+                # end += 1
+                while end < len(self.__mol_full_names) and self.__mol_full_names[end].split(mol_frag_sep)[0] == cur_mol:
+                    end += 1
+            # end -= 1
+            lines = [self.__file.readline().strip() for _ in range(start, end)]
+            x = []
+            for line in lines:
+                out = [0] * len(self.__varnames)
+                for entry in line.split():
+                    index, value = entry.split(':')
+                    out[int(index)] = float(value)
+                x.append(out)
+            x = np.asarray(x)
+            self.__cur_mol_read = end
+            return self.__mol_full_names[start:end], self.__varnames, x
 
     def __read_txt_next(self):
 
