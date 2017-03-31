@@ -255,7 +255,7 @@ def main():
                         help='file name of saved models (without extension)')
     parser.add_argument('-d', '--models_dir', metavar='path_to_models', required=True,
                         help='path to stored model files')
-    parser.add_argument('-p', '--properties', metavar='[overall charge hb ...]', nargs='*', default=["overall"],
+    parser.add_argument('-p', '--properties', metavar='[overall CHARGE HB ...]', nargs='*', default=["overall"],
                         help='name of atomic properties which should be considered during calculation of '
                              'contribution of fragments')
     parser.add_argument('-t', '--model_type', metavar='reg|class', default='reg',
