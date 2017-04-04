@@ -43,13 +43,13 @@ def main_params(in_sdf, out_txt, verbose, error_fname):
                                      (Chem.MolToSmiles(mol), Chem.MolToSmiles(s)))
                     sys.stderr.flush()
 
-            if verbose and (i + 1) % 100 == 0:
-                print('%i molecules passed' % (i + 1))
-
             else:
                 with open(error_fname, 'at') as f_err:
                     f_err.write('%s\t%s\tcould not read molecule number %i from file\n' %
                                 (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), os.path.basename(__file__), i + 1))
+
+            if verbose and (i + 1) % 100 == 0:
+                print('%i molecules passed' % (i + 1))
 
 
 def main():
