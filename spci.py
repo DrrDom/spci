@@ -47,7 +47,7 @@ def get_script_path():
 
 
 def quote_str(s):
-    return "'%s'" % s
+    return '"%s"' % s
 
 
 class StatWindow(tk.Toplevel):

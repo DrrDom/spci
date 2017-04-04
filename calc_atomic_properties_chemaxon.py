@@ -14,7 +14,7 @@ from subprocess import call
 
 
 def quote_str(s):
-    return "'%s'" % s
+    return '"%s"' % s
 
 
 def add_pH(params, pH):
