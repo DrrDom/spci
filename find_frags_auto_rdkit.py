@@ -15,22 +15,13 @@ from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-from mol_context import get_canon_context_core
+from mol_context import get_canon_context_core, get_submol
 
 
 def replace_no2(mol):
     query = Chem.MolFromSmarts('n(:o):o')
     repl = Chem.MolFromSmiles('[N+](=O)[O-]')
     return AllChem.ReplaceSubstructs(mol, query, repl, replaceAll=True)[0]
-
-
-def get_submol(mol, atom_ids):
-    bond_ids = []
-    for pair in combinations(atom_ids, 2):
-        b = mol.GetBondBetweenAtoms(*pair)
-        if b:
-            bond_ids.append(b.GetIdx())
-    return Chem.PathToSubmol(mol, bond_ids)
 
 
 def frag_mol_by_cuts(mol, cut_list, remove_stereo, radius):

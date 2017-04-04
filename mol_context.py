@@ -1,8 +1,17 @@
-from itertools import product, permutations
+from itertools import product, permutations, combinations
 from collections import defaultdict
 from rdkit import Chem
 
 __author__ = 'pavel'
+
+
+def get_submol(mol, atom_ids):
+    bond_ids = []
+    for pair in combinations(atom_ids, 2):
+        b = mol.GetBondBetweenAtoms(*pair)
+        if b:
+            bond_ids.append(b.GetIdx())
+    return Chem.PathToSubmol(mol, bond_ids)
 
 
 def get_mmp_context_env(mol, radius):
