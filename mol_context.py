@@ -14,7 +14,7 @@ def get_submol(mol, atom_ids):
     return Chem.PathToSubmol(mol, bond_ids)
 
 
-def get_mmp_context_env(mol, radius):
+def __get_mmp_context_env(mol, radius):
     # mol is context consisting of one or more groups with single attachment point
     bond_ids = set()
     for a in mol.GetAtoms():
@@ -28,14 +28,14 @@ def get_mmp_context_env(mol, radius):
     return Chem.PathToSubmol(mol, list(bond_ids))
 
 
-def replace_att(mol, repl_dict):
+def __replace_att(mol, repl_dict):
     for a in mol.GetAtoms():
         map_num = a.GetAtomMapNum()
         if map_num in repl_dict:
             a.SetAtomMapNum(repl_dict[map_num])
 
 
-def get_maps_and_ranks(context):
+def __get_maps_and_ranks(context):
     """Return list of attachment point map numbers and list of ranks (canonical SMILES without mapped attachment points)"""
     tmp_mol = Chem.Mol(context)
     maps = []
@@ -51,24 +51,24 @@ def get_maps_and_ranks(context):
     return maps, ranks
 
 
-def standardize_att_by_context(context, core):
+def __standardize_att_by_context(context, core):
     """
     Set attachment point numbers in core and context according to canonical ranks of attachment points in context
     Ties are broken
     Makes changes in place
     """
-    maps, ranks = get_maps_and_ranks(context)
+    maps, ranks = __get_maps_and_ranks(context)
     new_att = {m: i+1 for i, (r, m) in enumerate(sorted(zip(ranks, maps)))}
-    replace_att(core, new_att)
-    replace_att(context, new_att)
+    __replace_att(core, new_att)
+    __replace_att(context, new_att)
 
 
-def get_att_permutations(context):
+def __get_att_permutations(context):
     """
     Return possible permutations of attachment point map numbers as a tuple of dicts,
     where each dict: key - old number, value - new number
     """
-    maps, ranks = get_maps_and_ranks(context)
+    maps, ranks = __get_maps_and_ranks(context)
 
     d = defaultdict(list)
     for rank, att in zip(ranks, maps):
@@ -78,10 +78,10 @@ def get_att_permutations(context):
     for v in d.values():
         c.append([dict(zip(v, x)) for x in permutations(v, len(v))])
 
-    return tuple(merge_dicts(*item) for item in product(*c))
+    return tuple(__merge_dicts(*item) for item in product(*c))
 
 
-def permute_att(mol, d):
+def __permute_att(mol, d):
     new_mol = Chem.Mol(mol)
     for a in new_mol.GetAtoms():
         i = a.GetAtomMapNum()
@@ -90,7 +90,7 @@ def permute_att(mol, d):
     return new_mol
 
 
-def merge_dicts(*dicts):
+def __merge_dicts(*dicts):
     res = dicts[0].copy()
     for item in dicts[1:]:
         res.update(item)
@@ -118,18 +118,18 @@ def get_std_context_core_permutations(context, core, remove_stereo, radius):
             Chem.RemoveStereochemistry(context)
             Chem.RemoveStereochemistry(core)
 
-        env = get_mmp_context_env(context, radius)
+        env = __get_mmp_context_env(context, radius)
 
         if att_num == 1:
             return Chem.MolToSmiles(env), [Chem.MolToSmiles(core)]
         else:
             res = []
-            standardize_att_by_context(env, core)
-            p = get_att_permutations(env)
+            __standardize_att_by_context(env, core)
+            p = __get_att_permutations(env)
             # permute attachment point numbering only in core, since permutations in env will give the same canonical smiles
             if len(p) > 1:
                 for d in p:
-                    c = permute_att(core, d)
+                    c = __permute_att(core, d)
                     res.append(Chem.MolToSmiles(c))
             else:
                 res.append(Chem.MolToSmiles(core))
