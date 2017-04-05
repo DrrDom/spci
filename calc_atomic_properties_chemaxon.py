@@ -51,7 +51,7 @@ def add_HB(molstr):
 
 def main_params(in_fname, out_fname, prop, pH, cxcalc_path):
 
-    start_params = [quote_str(cxcalc_path)]
+    start_params = [cxcalc_path]   # remove quotes because Win cannot run "cxcalc" only "dir/cxcalc"
     start_params.extend(["-o", quote_str(out_fname)])
     start_params.append("-S")
     log_fname = os.path.splitext(out_fname)[0] + "_cxcalc.log"

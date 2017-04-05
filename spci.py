@@ -321,11 +321,11 @@ class Tab_1(ttk.Frame):
                 print('Atomic properties calculation is in progress...')
                 # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
                 output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
-                calc_atomic_properties_chemaxon.main_params(std_sdf_tmp,
-                                                            output_sdf,
-                                                            ['charge', 'logp', 'acc', 'don', 'refractivity'],
-                                                            None,
-                                                            os.path.join(self.chemaxon_dir.get(), 'cxcalc'))
+                calc_atomic_properties_chemaxon.main_params(in_fname=std_sdf_tmp,
+                                                            out_fname=output_sdf,
+                                                            prop=['charge', 'logp', 'acc', 'don', 'refractivity'],
+                                                            pH=None,
+                                                            cxcalc_path='cxcalc')
 
                 os.remove(std_sdf_tmp)
                 if tmp_sdf is not None:
