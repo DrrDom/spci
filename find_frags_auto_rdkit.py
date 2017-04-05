@@ -24,14 +24,14 @@ def replace_no2(mol):
     return AllChem.ReplaceSubstructs(mol, query, repl, replaceAll=True)[0]
 
 
-def frag_mol_by_cuts(mol, cut_list, remove_stereo, radius):
+def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
 
     em = Chem.EditableMol(mol)
 
     output = []
     ap_ids = []
 
-    for i, cut in enumerate(cut_list):
+    for i, cut in enumerate(cut_list):   # this can be replaced with FragmentOnBonds
         em.RemoveBond(cut[0], cut[1])
         ap1 = em.AddAtom(Chem.Atom(0))
         ap_ids.append(ap1)
@@ -66,7 +66,7 @@ def frag_mol_by_cuts(mol, cut_list, remove_stereo, radius):
             core = get_submol(mol, core_ids)
             if radius > 0:
                 context = get_submol(mol, context_ids)
-                context, core = get_canon_context_core(context, core, remove_stereo, radius)
+                context, core = get_canon_context_core(context, core, keep_stereo, radius)
                 output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
             else:
                 output.append((Chem.MolToSmiles(core), tuple(sorted(i for i in core_ids if i not in ap_ids))))
@@ -82,7 +82,7 @@ def frag_mol_by_cuts(mol, cut_list, remove_stereo, radius):
         core = get_submol(mol, core_ids)
         if radius > 0:
             context = get_submol(mol, context_ids)
-            context, core = get_canon_context_core(context, core, remove_stereo, radius)
+            context, core = get_canon_context_core(context, core, keep_stereo, radius)
             output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
         else:
             output.append((Chem.MolToSmiles(core), tuple(sorted(i for i in core_ids if i not in ap_ids))))
@@ -90,7 +90,7 @@ def frag_mol_by_cuts(mol, cut_list, remove_stereo, radius):
     return output
 
 
-def fragment_mol(mol, query, max_cuts, remove_stereo, radius):
+def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
     # returns list of lists: [['F', [0]], ['C#N', [3, 4]], ... ]
 
     # modify representation of NO2 groups to charged version
@@ -106,12 +106,12 @@ def fragment_mol(mol, query, max_cuts, remove_stereo, radius):
 
     for i in range(1, max_cuts + 1):
         for comb in combinations(all_cuts, i):
-            output.extend(frag_mol_by_cuts(mol, comb, remove_stereo, radius))
+            output.extend(frag_mol_by_cuts(mol, comb, keep_stereo, radius))
 
     return output
 
 
-def main_params(in_sdf, out_txt, query, max_cuts, remove_stereo, radius, verbose, error_fname):
+def main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname):
 
     query = Chem.MolFromSmarts(query)
 
@@ -120,7 +120,7 @@ def main_params(in_sdf, out_txt, query, max_cuts, remove_stereo, radius, verbose
             if mol is not None:
                 if verbose:
                     print(mol.GetProp("_Name") + ' is processing')
-                res = fragment_mol(mol, query, max_cuts, remove_stereo, radius)
+                res = fragment_mol(mol, query, max_cuts, keep_stereo, radius)
                 for item in res:
                     ids = [i + 1 for i in item[1]]  # save as 1-based ids
                     f.write(mol.GetProp("_Name") + '\t' + item[0] + '\t' + '\t'.join(map(str, ids)) + '\n')
@@ -147,8 +147,8 @@ def main():
     parser.add_argument('-r', '--radius', metavar='integer', default=0,
                         help='radius of molecular context (in bonds) which will be taken into account. '
                              '0 means no context. Default: 0.')
-    parser.add_argument('-s', '--remove_stereo', action='store_true', default=False,
-                        help='set this flag to remove stereo from context and core parts.')
+    parser.add_argument('-s', '--keep_stereo', action='store_true', default=False,
+                        help='set this flag to keep stereo in context and core parts.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='show progress on the screen.')
     parser.add_argument('-e', '--error_file', metavar='log_file_name.txt', default="rdkit_errors.txt",
@@ -163,10 +163,10 @@ def main():
         if o == "upper_cuts_number": max_cuts = int(v)
         if o == "verbose": verbose = v
         if o == "error_file": error_fname = v
-        if o == "remove_stereo": remove_stereo = v
+        if o == "keep_stereo": keep_stereo = v
         if o == "radius": radius = int(v)
 
-    main_params(in_sdf, out_txt, query, max_cuts, remove_stereo, radius, verbose, error_fname)
+    main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname)
 
 
 if __name__ == '__main__':

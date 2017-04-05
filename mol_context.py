@@ -97,7 +97,7 @@ def __merge_dicts(*dicts):
     return res
 
 
-def get_std_context_core_permutations(context, core, remove_stereo, radius):
+def get_std_context_core_permutations(context, core, keep_stereo, radius, return_mols=False):
     # input are SMILES or Mol objects
 
     # returns standardized environment as SMILES (context with specified radius) and
@@ -114,14 +114,18 @@ def get_std_context_core_permutations(context, core, remove_stereo, radius):
 
         att_num = len(Chem.GetMolFrags(context))
 
-        if remove_stereo:
+        if not keep_stereo:
             Chem.RemoveStereochemistry(context)
             Chem.RemoveStereochemistry(core)
 
         env = __get_mmp_context_env(context, radius)
 
         if att_num == 1:
-            return Chem.MolToSmiles(env), [Chem.MolToSmiles(core)]
+            if not return_mols:
+                return Chem.MolToSmiles(env, isomericSmiles=keep_stereo), \
+                       [Chem.MolToSmiles(core, isomericSmiles=keep_stereo)]
+            else:
+                return env, [core]
         else:
             res = []
             __standardize_att_by_context(env, core)
@@ -130,19 +134,24 @@ def get_std_context_core_permutations(context, core, remove_stereo, radius):
             if len(p) > 1:
                 for d in p:
                     c = __permute_att(core, d)
-                    res.append(Chem.MolToSmiles(c))
+                    res.append(c)
             else:
-                res.append(Chem.MolToSmiles(core))
-            return Chem.MolToSmiles(env), list(set(res))
+                res.append(core)
+            if not return_mols:
+                return Chem.MolToSmiles(env, isomericSmiles=keep_stereo), \
+                       list(set(Chem.MolToSmiles(item, isomericSmiles=keep_stereo) for item in res))
+            else:
+                return env, res
 
     else:
 
         return None
 
 
-def get_canon_context_core(context, core, remove_stereo, radius):
+def get_canon_context_core(context, core, keep_stereo, radius):
     # context and core are Mol
-    res = get_std_context_core_permutations(context, core, remove_stereo, radius)
+    # returns SMILES by default
+    res = get_std_context_core_permutations(context, core, keep_stereo, radius)
     if res:
         env, cores = res
         return env, sorted(cores)[0]
