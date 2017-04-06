@@ -99,6 +99,7 @@ def __merge_dicts(*dicts):
 
 def get_std_context_core_permutations(context, core, keep_stereo, radius, return_mols=False):
     # input are SMILES or Mol objects
+    # radius must be 1 or more
 
     # returns standardized environment as SMILES (context with specified radius) and
     # the list of cores with permuted att. point numbers according to environment
@@ -110,7 +111,7 @@ def get_std_context_core_permutations(context, core, keep_stereo, radius, return
     if isinstance(core, str):
         core = Chem.MolFromSmiles(core)
 
-    if core and context:
+    if core and context or radius < 1:
 
         att_num = len(Chem.GetMolFrags(context))
 

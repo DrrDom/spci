@@ -8,6 +8,7 @@
 #==============================================================================
 
 import os
+import re
 import argparse
 
 from itertools import combinations, permutations
@@ -16,6 +17,9 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 from mol_context import get_canon_context_core, get_submol
+
+
+patt = re.compile("\[\*\:[0-9]+\]")  # to change CC([*:1])O to CC([*])O
 
 
 def replace_no2(mol):
@@ -43,10 +47,9 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
     mol = em.GetMol()
 
     # label cut points
-    if radius > 0:
-        for i, ids in enumerate(zip(ap_ids[0::2], ap_ids[1::2])):
-            for id in ids:
-                mol.GetAtomWithIdx(id).SetAtomMapNum(i + 1)
+    for i, ids in enumerate(zip(ap_ids[0::2], ap_ids[1::2])):
+        for id in ids:
+            mol.GetAtomWithIdx(id).SetAtomMapNum(i + 1)
 
     # if split produce more than one fragment with several cuts it is illegible
     # ex: C* *CO* *CC* *O
@@ -69,7 +72,9 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
                 context, core = get_canon_context_core(context, core, keep_stereo, radius)
                 output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
             else:
-                output.append((Chem.MolToSmiles(core), tuple(sorted(i for i in core_ids if i not in ap_ids))))
+                # remove all atom map numbers to obtain SMILES compatible with SMILES having atom map numbers
+                core_smi = patt.sub("[*]", Chem.MolToSmiles(core))
+                output.append((core_smi, tuple(sorted(i for i in core_ids if i not in ap_ids))))
     # two amd more cuts
     else:
         core_ids = []
@@ -85,7 +90,9 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
             context, core = get_canon_context_core(context, core, keep_stereo, radius)
             output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
         else:
-            output.append((Chem.MolToSmiles(core), tuple(sorted(i for i in core_ids if i not in ap_ids))))
+            # remove all atom map numbers to obtain SMILES compatible with SMILES having atom map numbers
+            core_smi = patt.sub("[*]", Chem.MolToSmiles(core))
+            output.append((core_smi, tuple(sorted(i for i in core_ids if i not in ap_ids))))
 
     return output
 
