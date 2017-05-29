@@ -69,12 +69,12 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
             core = get_submol(mol, core_ids)
             if radius > 0:
                 context = get_submol(mol, context_ids)
-                context, core = get_canon_context_core(context, core, keep_stereo, radius)
+                context, core = get_canon_context_core(context, core, radius, keep_stereo)
                 output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
             else:
                 # remove all atom map numbers to obtain SMILES compatible with SMILES having atom map numbers
-                core_smi = patt.sub("[*]", Chem.MolToSmiles(core))
-                output.append((core_smi, tuple(sorted(i for i in core_ids if i not in ap_ids))))
+                context, core = get_canon_context_core('', core, radius, keep_stereo)
+                output.append((core, tuple(sorted(i for i in core_ids if i not in ap_ids))))
     # two amd more cuts
     else:
         core_ids = []
@@ -90,9 +90,8 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
             context, core = get_canon_context_core(context, core, keep_stereo, radius)
             output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
         else:
-            # remove all atom map numbers to obtain SMILES compatible with SMILES having atom map numbers
-            core_smi = patt.sub("[*]", Chem.MolToSmiles(core))
-            output.append((core_smi, tuple(sorted(i for i in core_ids if i not in ap_ids))))
+                context, core = get_canon_context_core('', core, radius, keep_stereo)
+                output.append((core, tuple(sorted(i for i in core_ids if i not in ap_ids))))
 
     return output
 
