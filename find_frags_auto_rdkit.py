@@ -14,7 +14,7 @@ import argparse
 from itertools import combinations, permutations
 from datetime import datetime
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, rdMMPA
 
 from mol_context import get_canon_context_core, get_submol
 
@@ -45,6 +45,7 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
         em.AddBond(cut[1], ap2, Chem.BondType.SINGLE)
 
     mol = em.GetMol()
+    mol.UpdatePropertyCache()
 
     # label cut points
     for i, ids in enumerate(zip(ap_ids[0::2], ap_ids[1::2])):
@@ -67,14 +68,21 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
     if len(frags) == 2:
         for core_ids, context_ids in permutations(frags, 2):
             core = get_submol(mol, core_ids)
-            if radius > 0:
-                context = get_submol(mol, context_ids)
-                context, core = get_canon_context_core(context, core, radius, keep_stereo)
-                output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
-            else:
-                # remove all atom map numbers to obtain SMILES compatible with SMILES having atom map numbers
-                context, core = get_canon_context_core('', core, radius, keep_stereo)
-                output.append((core, tuple(sorted(i for i in core_ids if i not in ap_ids))))
+            context = get_submol(mol, context_ids)
+
+            print(Chem.MolToSmiles(core), Chem.MolToSmiles(context))
+
+            line = []
+            for r in radius:
+
+                print(r)
+
+                if r > 0:
+                    env_smi, core_smi = get_canon_context_core(context, core, r, keep_stereo)
+                else:
+                    env_smi, core_smi = get_canon_context_core('', core, r, keep_stereo)
+                line.append('%s|%s' % (core_smi, env_smi))
+            output.append(('||'.join(line), tuple(sorted(i for i in core_ids if i not in ap_ids))))
     # two amd more cuts
     else:
         core_ids = []
@@ -85,19 +93,44 @@ def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
             else:
                 core_ids.extend(f)
         core = get_submol(mol, core_ids)
-        if radius > 0:
-            context = get_submol(mol, context_ids)
-            context, core = get_canon_context_core(context, core, keep_stereo, radius)
-            output.append((core + '|' + context, tuple(sorted(i for i in core_ids if i not in ap_ids))))
-        else:
-                context, core = get_canon_context_core('', core, radius, keep_stereo)
-                output.append((core, tuple(sorted(i for i in core_ids if i not in ap_ids))))
+        context = get_submol(mol, context_ids)
+
+        print(Chem.MolToSmiles(core), Chem.MolToSmiles(context))
+
+        line = []
+        for r in radius:
+            if r > 0:
+                env_smi, core_smi = get_canon_context_core(context, core, r, keep_stereo)
+            else:
+                env_smi, core_smi = get_canon_context_core('', core, r, keep_stereo)
+            line.append('%s|%s' % (core_smi, env_smi))
+        output.append(('||'.join(line), tuple(sorted(i for i in core_ids if i not in ap_ids))))
 
     return output
 
 
 def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
     # returns list of lists: [['F', [0]], ['C#N', [3, 4]], ... ]
+
+    def get_atom_prop(molecule, prop="Index", only_heavy=True):
+        res = []
+        for a in molecule.GetAtoms():
+            if only_heavy and a.GetAtomicNum() > 1:
+                try:
+                    res.append(a.GetIntProp(prop))
+                except KeyError:
+                    continue
+        return tuple(sorted(res))
+
+    def get_frag_name(context, core, radius, keep_stereo):
+        line = []
+        for r in radius:
+            env_smi, core_smi = get_canon_context_core(context, core, r, keep_stereo)
+            if env_smi:
+                line.append('%s|%s' % (core_smi, env_smi))
+            else: # for radius = 0 there is no env (empty string)
+                line.append(core_smi)
+        return '||'.join(line)
 
     # modify representation of NO2 groups to charged version
     mol = replace_no2(mol)
@@ -108,11 +141,32 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
 
     output = []
 
+    for atom in mol.GetAtoms():
+        atom.SetIntProp("Index", atom.GetIdx())
+
     all_cuts = mol.GetSubstructMatches(query)
 
-    for i in range(1, max_cuts + 1):
-        for comb in combinations(all_cuts, i):
-            output.extend(frag_mol_by_cuts(mol, comb, keep_stereo, radius))
+    frags = rdMMPA.FragmentMol(mol, pattern="[!#1]!@!=!#[!#1]", maxCuts=4, resultsAsMols=True, maxCutBonds=30)
+
+    for core, chains in frags:
+        if core is None:  # single cut
+            components = list(Chem.GetMolFrags(chains, asMols=True))
+            ids_0 = get_atom_prop(components[0])
+            ids_1 = get_atom_prop(components[1])
+            if Chem.MolToSmiles(components[0]) != '[H][*:1]':  # context cannot be H
+                frag_name = get_frag_name(components[0], components[1], radius, keep_stereo)
+                output.append((frag_name, ids_1))
+            if Chem.MolToSmiles(components[1]) != '[H][*:1]':  # context cannot be H
+                frag_name = get_frag_name(components[1], components[0], radius, keep_stereo)
+                output.append((frag_name, ids_0))
+        else:   # multiple cuts
+            # there are no checks for H needed because H can be present only in single cuts
+            frag_name = get_frag_name(chains, core, radius, keep_stereo)
+            output.append((frag_name, get_atom_prop(core)))
+
+    # for i in range(1, max_cuts + 1):
+    #     for comb in combinations(all_cuts, i):
+    #         output.extend(frag_mol_by_cuts(mol, comb, keep_stereo, radius))
 
     return output
 
@@ -150,9 +204,11 @@ def main():
                         help='SMARTS string to match bonds to cleave. Default: [#6+0;!$(*=,#[!#6])]!@!=!#[!#1]')
     parser.add_argument('-u', '--upper_cuts_number', metavar='integer', default=3,
                         help='maximal number of bonds cleaved simultaneously. Default: 3')
-    parser.add_argument('-r', '--radius', metavar='integer', default=0,
+    parser.add_argument('-r', '--radius', metavar='integer', default=[0], nargs='*',
                         help='radius of molecular context (in bonds) which will be taken into account. '
-                             '0 means no context. Default: 0.')
+                             '0 means no context. Several values separated by space can be specified. '
+                             'The output fragment names will consist of core_smi_1|env_smi_1||core_smi_2|env_smi_2.'
+                             ' Default: [0].')
     parser.add_argument('-s', '--keep_stereo', action='store_true', default=False,
                         help='set this flag to keep stereo in context and core parts.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -170,7 +226,7 @@ def main():
         if o == "verbose": verbose = v
         if o == "error_file": error_fname = v
         if o == "keep_stereo": keep_stereo = v
-        if o == "radius": radius = int(v)
+        if o == "radius": radius = tuple(sorted(map(int, v)))
 
     main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname)
 
