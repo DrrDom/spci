@@ -1,4 +1,5 @@
 import re
+import sys
 from itertools import product, permutations, combinations
 from collections import defaultdict
 from rdkit import Chem
@@ -25,7 +26,8 @@ def __get_context_env(mol, radius):
         mol - Mol object containing chain(s) of molecular context
         radius - integer, number of bonds to cut context
     OUTPUT:
-        Mol containing only atoms within the specified radius from the attachment point(s)
+        Mol containing only atoms within the specified radius from the attachment point(s).
+        All explicit Hs will be stripped.
     """
     # mol is context consisting of one or more groups with single attachment point
     bond_ids = set()
@@ -37,7 +39,11 @@ def __get_context_env(mol, radius):
                 i -= 1
                 b = Chem.FindAtomEnvironmentOfRadiusN(mol, i, a.GetIdx())
             bond_ids.update(b)
-    return Chem.PathToSubmol(mol, list(bond_ids))
+    m = Chem.PathToSubmol(mol, list(bond_ids))
+    # remove Hs, otherwise terminal atoms will produce smiles with H ([CH2]C[*:1])
+    for a in m.GetAtoms():
+        a.SetNumExplicitHs(0)
+    return m
 
 
 def __replace_att(mol, repl_dict):
@@ -142,6 +148,10 @@ def __standardize_smiles_with_att_points(mol, keep_stereo=False):
     https://sourceforge.net/p/rdkit/mailman/message/35862258/
     """
 
+    # update property cache if needed
+    if mol.NeedsUpdatePropertyCache():
+        mol.UpdatePropertyCache()
+
     # store original maps and remove map numbers from mol
     backup_atom_map = "backupAtomMap"
     for a in mol.GetAtoms():
@@ -184,6 +194,9 @@ def get_std_context_core_permutations(context, core, radius, keep_stereo):
     OUTPUT:
         SMILES of a context environment of a specified radius,
         list of SMILES of a core fragment with possible permutations of attachment point numbers
+        env_smi, (core_smi_1, core_smi_2, ...)
+
+        env_smi will not contain any Hs
 
         for radius 0 attachment point numbers will be stripped, but the string will correspond to core SMILES with
         radius > 0 if remove all map numbers from SMILES
@@ -193,8 +206,12 @@ def get_std_context_core_permutations(context, core, radius, keep_stereo):
 
     if isinstance(context, str):
         context = Chem.MolFromSmiles(context)
+    # if Chem.MolToSmiles(context) != '[H][*:1]':
+    context = Chem.RemoveHs(context)   # context cannot be H (no check), if so the user will obtain meaningless output
     if isinstance(core, str):
         core = Chem.MolFromSmiles(core)
+    if Chem.MolToSmiles(core) != '[H][*:1]':
+        core = Chem.RemoveHs(core)
 
     if radius == 0 and core:
 
@@ -204,7 +221,7 @@ def get_std_context_core_permutations(context, core, radius, keep_stereo):
         s = __standardize_smiles_with_att_points(core, keep_stereo)
         s = patt_remove_map.sub("[*]", s)
 
-        return '', [s]
+        return '', (s, )
 
     if core and context:
 
@@ -220,7 +237,7 @@ def get_std_context_core_permutations(context, core, radius, keep_stereo):
 
         if att_num == 1:
 
-            return env_smi, [__standardize_smiles_with_att_points(core, keep_stereo)]
+            return env_smi, (__standardize_smiles_with_att_points(core, keep_stereo), )
 
         else:
 
