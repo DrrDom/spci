@@ -126,11 +126,12 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
         line = []
         for r in radius:
             env_smi, core_smi = get_canon_context_core(context, core, r, keep_stereo)
-            if env_smi:
-                line.append('%s|%s' % (core_smi, env_smi))
-            else: # for radius = 0 there is no env (empty string)
-                line.append(core_smi)
-        return '||'.join(line)
+            if env_smi and core_smi:
+                if env_smi:
+                    line.append('%s|%s' % (core_smi, env_smi))
+                else: # for radius = 0 there is no env (empty string)
+                    line.append(core_smi)
+        return '||'.join(line) if line else None
 
     # modify representation of NO2 groups to charged version
     mol = replace_no2(mol)
@@ -155,14 +156,17 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
             ids_1 = get_atom_prop(components[1])
             if Chem.MolToSmiles(components[0]) != '[H][*:1]':  # context cannot be H
                 frag_name = get_frag_name(components[0], components[1], radius, keep_stereo)
-                output.append((frag_name, ids_1))
+                if frag_name:
+                    output.append((frag_name, ids_1))
             if Chem.MolToSmiles(components[1]) != '[H][*:1]':  # context cannot be H
                 frag_name = get_frag_name(components[1], components[0], radius, keep_stereo)
-                output.append((frag_name, ids_0))
+                if frag_name:
+                    output.append((frag_name, ids_0))
         else:   # multiple cuts
             # there are no checks for H needed because H can be present only in single cuts
             frag_name = get_frag_name(chains, core, radius, keep_stereo)
-            output.append((frag_name, get_atom_prop(core)))
+            if frag_name:
+                output.append((frag_name, get_atom_prop(core)))
 
     # for i in range(1, max_cuts + 1):
     #     for comb in combinations(all_cuts, i):
