@@ -206,11 +206,13 @@ def get_std_context_core_permutations(context, core, radius, keep_stereo):
 
     if isinstance(context, str):
         context = Chem.MolFromSmiles(context)
-    # if Chem.MolToSmiles(context) != '[H][*:1]':
-    context = Chem.RemoveHs(context)   # context cannot be H (no check), if so the user will obtain meaningless output
     if isinstance(core, str):
         core = Chem.MolFromSmiles(core)
-    if Chem.MolToSmiles(core) != '[H][*:1]':
+
+    # remove Hs from context and core
+    if context:  # context cannot be H (no check needed), if so the user will obtain meaningless output
+        context = Chem.RemoveHs(context)
+    if core and Chem.MolToSmiles(core) != '[H][*:1]':
         core = Chem.RemoveHs(core)
 
     if radius == 0 and core:
