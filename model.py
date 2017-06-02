@@ -178,14 +178,6 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
         print("Illegal value of input format: " % input_format)
         exit()
 
-    save_bound_box_constrains(x, os.path.join(models_dir, "bound_box.pkl"))
-
-    save_object(descr_names, os.path.join(models_dir, "var_names.pkl"))
-
-    scale = StandardScaler().fit(x)
-    save_object(scale, os.path.join(models_dir, "scale.pkl"))
-    x = scale.transform(x)
-
     # load y
     y = load_y(y_fname)
 
@@ -194,6 +186,15 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
     x = np.delete(x, ids, 0)
     mol_names = [n for i, n in enumerate(mol_names) if i not in ids]
     y = np.asarray([y[n] for n in mol_names])
+
+    # process filtered x
+    save_bound_box_constrains(x, os.path.join(models_dir, "bound_box.pkl"))
+
+    save_object(descr_names, os.path.join(models_dir, "var_names.pkl"))
+
+    scale = StandardScaler().fit(x)
+    save_object(scale, os.path.join(models_dir, "scale.pkl"))
+    x = scale.transform(x)
 
     cv5 = cv.KFold(n=len(y), n_folds=5, random_state=42, shuffle=True)
 
