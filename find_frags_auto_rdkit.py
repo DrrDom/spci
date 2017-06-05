@@ -126,11 +126,11 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
         line = []
         for r in radius:
             env_smi, core_smi = get_canon_context_core(context, core, r, keep_stereo)
-            if env_smi and core_smi:
-                if env_smi:
+            if r == 0:  # for radius = 0 there is no env (empty string)
+                line.append(core_smi)
+            else:
+                if env_smi and core_smi:
                     line.append('%s|%s' % (core_smi, env_smi))
-                else: # for radius = 0 there is no env (empty string)
-                    line.append(core_smi)
         return '||'.join(line) if line else None
 
     # modify representation of NO2 groups to charged version
@@ -145,7 +145,7 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
     for atom in mol.GetAtoms():
         atom.SetIntProp("Index", atom.GetIdx())
 
-    all_cuts = mol.GetSubstructMatches(query)
+    # all_cuts = mol.GetSubstructMatches(query)
 
     frags = rdMMPA.FragmentMol(mol, pattern="[!#1]!@!=!#[!#1]", maxCuts=4, resultsAsMols=True, maxCutBonds=30)
 
