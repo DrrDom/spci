@@ -15,9 +15,10 @@ from rdkit import Chem
 def main_params(input_sdf_fname, field_name, output_sdf_fname):
 
     w = Chem.SDWriter(output_sdf_fname)
+    w.SetKekulize(False)
     i = 1
 
-    for m in Chem.SDMolSupplier(input_sdf_fname):
+    for m in Chem.SDMolSupplier(input_sdf_fname, False, False, False):
         if m:
             if field_name and m.HasProp(field_name):
                 m.SetProp('_Name', m.GetProp(field_name))
