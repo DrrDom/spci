@@ -1,59 +1,44 @@
 #!/usr/bin/env python
 #==============================================================================
 # author          : Pavel Polishchuk
-# date            : 01-11-2014
+# date            : 08-06-2017
 # version         : 0.1
 # python_version  : 3.2
-# copyright       : Pavel Polishchuk 2014
+# copyright       : Pavel Polishchuk 2017
 # license         : GPL3
 #==============================================================================
 
 import argparse
-
-
-def extract_field_value(mol, field_name):
-    for i, line in enumerate(mol):
-        if line.strip().find("> <" + field_name + ">") == 0 or line.strip().find(">  <" + field_name + ">") == 0:
-            return mol[i+1].strip()
-
-
-def set_mol_name(mol, mol_name):
-    mol[0] = mol_name + "\n"
-    return mol
+from rdkit import Chem
 
 
 def main_params(input_sdf_fname, field_name, output_sdf_fname):
 
-    with open(input_sdf_fname, "rt") as fin:
-        with open(output_sdf_fname, "wt") as fout:
-            mol = []
-            id = 1
-            for line in fin:
-                if line.strip() != "$$$$":
-                    mol.append(line)
-                else:
-                    mol.append(line)
-                    if field_name is None:
-                        tmp = 'MolID_' + str(id)
-                        id += 1
-                    else:
-                        tmp = extract_field_value(mol, field_name)
-                    print(tmp)
-                    set_mol_name(mol, tmp)
-                    fout.writelines(mol)
-                    mol = []
+    w = Chem.SDWriter(output_sdf_fname)
+    i = 1
+
+    for m in Chem.SDMolSupplier(input_sdf_fname):
+        if m:
+            if field_name and m.HasProp(field_name):
+                m.SetProp('_Name', m.GetProp(field_name))
+            else:
+                m.SetProp('_Name', 'MolID_%i' % i)
+                i += 1
+            w.write(m)
+
+    w.close()
 
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Plot fragments contributions.')
+    parser = argparse.ArgumentParser(description='Insert mol titles to sdf file.')
     parser.add_argument('-i', '--input', metavar='input.sdf', required=True,
                         help='input sdf file.')
     parser.add_argument('-o', '--output', metavar='output.sdf', required=True,
                         help='output sdf file.')
     parser.add_argument('-f', '--field_name', default=None,
                         help='field name in sdf file which will be copied to molecule title, '
-                             'if omitted sequence number will be inserted.')
+                             'if omitted compounds will ne enumerated sequentially with MolID_ prefix.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():
