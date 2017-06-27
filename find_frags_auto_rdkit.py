@@ -147,7 +147,7 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
 
     # all_cuts = mol.GetSubstructMatches(query)
 
-    frags = rdMMPA.FragmentMol(mol, pattern="[!#1]!@!=!#[!#1]", maxCuts=4, resultsAsMols=True, maxCutBonds=30)
+    frags = rdMMPA.FragmentMol(mol, pattern=query, maxCuts=max_cuts, resultsAsMols=True, maxCutBonds=30)
 
     for core, chains in frags:
         if core is None:  # single cut
