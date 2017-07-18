@@ -398,7 +398,8 @@ class Tab_1(ttk.Frame):
                                    out_fname=property_filename,
                                    title=True,
                                    field_names=[self.property_field_name.get().strip()],
-                                   all_fields=False)
+                                   all_fields=False,
+                                   skip_value='NA')
             self.__remove_forbidden_y(property_filename)
             self.property_file_path.set(property_filename)
 

@@ -8,55 +8,52 @@
 # license         : GPL3
 #==============================================================================
 
+import re
 import sys
 import argparse
 from itertools import chain
 
+patt = re.compile('> {1,2}<(.*)>( +\([0-9]+\))?')
 
-def main_params(in_fname, out_fname, title, field_names, all_fields):
+
+def get_fields(molstr):
+    # return dict of field names and values
+    d = dict()
+    i = 0
+    while i < len(molstr):
+        print(patt)
+        if patt.fullmatch(molstr[i]):
+            d[patt.sub('\\1', molstr[i])] = molstr[i + 1]
+            i += 1
+        i += 1
+    return d
+
+
+def main_params(in_fname, out_fname, title, field_names, all_fields, skip_value):
 
     with open(in_fname) as ifs:
 
         output = []
 
-        # add title
-        if title:
-            title_str = ifs.readline().strip()
-            if title_str != '':
-                output.append({'Title': title_str})
-            else:
-                output.append({'Title': 'NA'})
-        else:
-            output.append(dict())
-
+        molstr = []
         for line in ifs:
-
-            if line[0] == ">":
-
-                if all_fields:
-                    start = line.find("<") + 1
-                    field_name = line.strip()[start:-1]
-                    output[-1][field_name] = ifs.readline().strip()
-
-                elif field_names is not None:
-                    for field_name in field_names:
-                        if line.find("<" + field_name + ">") >= 0:
-                            output[-1][field_name] = ifs.readline().strip()
-                            break
-
-            elif line.find("$$$$\n") > -1:
-                # add title
+            l = line.strip()
+            if l != '$$$$':
+                molstr.append(l)
+            else:
+                d = dict()
+                fields = get_fields(molstr)
                 if title:
-                    title_str = ifs.readline().strip()
-                    if title_str != '':
-                        output.append({'Title': title_str})
+                    if molstr[0]:
+                        d['Title'] = molstr[0]
                     else:
-                        output.append({'Title': 'NA'})
+                        d['Title'] = ''
+                if all_fields:
+                    d.update(fields)
                 else:
-                    output.append(dict())
-
-        # remove last blank record from the output list
-        output.pop()
+                    d.update({f: fields[f] for f in field_names if f in fields})
+                output.append(d)
+                molstr = []
 
     with open(out_fname, "w") as ofs:
         # get sorted unique field names
@@ -67,7 +64,17 @@ def main_params(in_fname, out_fname, title, field_names, all_fields):
         ofs.write("\t".join(field_names) + "\n")
         sys.stdout.write("\t".join(field_names) + "\n")
         for item in output:
-            line = [item.get(f, 'NA') for f in field_names]
+            line = [item.get(f, '') for f in field_names]
+            if skip_value:
+                # replace skipped values (NA) with empty string
+                line = [v if v != skip_value else '' for v in line]
+                # skip lines having all empty values
+                if title:
+                    if all(v == '' for v in line[1:]):
+                        continue
+                else:
+                    if all(v == '' for v in line):
+                        continue
             ofs.write("\t".join(line) + "\n")
             sys.stdout.write("\t".join(line) + "\n")
 
@@ -79,12 +86,15 @@ def main():
     parser.add_argument('-o', '--out', metavar='output.txt', required=True,
                         help='output text file with values of specified fields')
     parser.add_argument('-t', '--title', action='store_true', default=False,
-                        help='If true molecules titles will be extracted')
+                        help='If true then molecules titles will be extracted')
     parser.add_argument('-f', '--field_names', metavar='[field_name_1 field_name_2 ...]',
                         required=False, default=None, nargs='*',
                         help='space separated list of field names for extraction')
     parser.add_argument('-a', '--all_fields', action='store_true', default=False,
-                        help='If set (true) all fields will be extracted.')
+                        help='if set (true) all fields will be extracted.')
+    parser.add_argument('--skip', default=None,
+                        help='specify field value which will be skipped. Usually NA can be set to skip missing values. '
+                             'By default no values are skipped.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():
@@ -93,8 +103,9 @@ def main():
         if o == "title": title = v
         if o == "field_names": field_names = v
         if o == "all_fields": all_fields = v
+        if o == "skip": skip_value = v
 
-    main_params(in_fname, out_fname, title, field_names, all_fields)
+    main_params(in_fname, out_fname, title, field_names, all_fields, skip_value)
 
 
 if __name__ == '__main__':
