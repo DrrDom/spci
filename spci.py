@@ -9,6 +9,7 @@
 #==============================================================================
 
 import os
+import re
 from runpy import run_path
 import sys
 import ast
@@ -472,20 +473,17 @@ class Tab_1(ttk.Frame):
         self.master.children['tab_3']._show_models_list()
 
     def __read_sdf_field_names(self, fname):
-        field_names = []
+        p = re.compile('> {1,2}<(.*)>( +\([0-9]+\))?')
+        field_names = set()
         if not os.path.isfile(fname):
             messagebox.showerror('ERROR!', "Specified file name doesn't exist.")
             return field_names
         with open(fname) as f:
-            line = f.readline().rstrip()
-            while line != '$$$$':
-                # one or two spaces between > and < can be possible
-                if line.startswith('>  <') and line.endswith('>'):
-                    field_names.append(line[4:-1])
-                if line.startswith('> <') and line.endswith('>'):
-                    field_names.append(line[3:-1])
-                line = f.readline().rstrip()
-        return field_names
+            for line in f:
+                line = line.rstrip()
+                if p.fullmatch(line):
+                    field_names.add(p.sub('\\1', line))
+        return sorted(field_names)
 
     def __set_compound_names_choice_event(self, event):
         self.compound_names.set(value='field')
