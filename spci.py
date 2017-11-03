@@ -729,7 +729,9 @@ class Tab_2(ttk.Frame):
                                       save_pred=True,
                                       input_format='svm',
                                       long_format=False,
-                                      save_frag_ids=False)
+                                      save_frag_ids=False,
+                                      activity_file=os.path.join(os.path.dirname(self.sdf_path.get()),
+                                                                 self.property_field_name.get().strip() + '.txt'))
 
         print("Calculation completed.")
 

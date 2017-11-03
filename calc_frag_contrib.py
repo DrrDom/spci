@@ -13,7 +13,7 @@ import argparse
 import platform
 import numpy as np
 from sklearn.externals import joblib
-from collections import defaultdict, OrderedDict
+from collections import defaultdict, OrderedDict, Counter
 
 from sirms_file_class import SirmsFile, mol_frag_sep
 
@@ -136,8 +136,30 @@ def predict(x, model, model_name, model_type):
     return pred
 
 
+def read_mol_names_from_activity_file(fname):
+    with open(fname) as f:
+        f.readline()
+        output = [line.split()[0] for line in f]
+    return output
+
+
+def adjust_mols(keep_mol_names, mol_names, x):
+    # the len of mol_names should be equal to number of rows of x
+    ids = []
+    output_mol_names = []
+    # count mol names to remove mols withput fragments 
+    c = Counter((mol_name.split(mol_frag_sep)[0] for mol_name in mol_names))
+    for i, mol_name in enumerate(mol_names):
+        m_name = mol_name.split(mol_frag_sep)[0]
+        if m_name in keep_mol_names and c[m_name] > 1:
+            ids.append(i)
+            output_mol_names.append(mol_name)
+
+    return output_mol_names, x[ids]
+
+
 def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred, input_format,
-                long_format, save_frag_ids):
+                long_format, save_frag_ids, activity_file):
 
     if save_pred:
         save_pred_fname = os.path.splitext(out_fname)[0] + "_pred.txt"
@@ -159,6 +181,9 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     # for adjusting data sets before prediction (solving different order of descriptors)
     ref_var_names = joblib.load(os.path.join(model_dir, "var_names.pkl"))
 
+    if activity_file:
+        used_mol_names = set(read_mol_names_from_activity_file(activity_file))
+
     if model_type == 'reg' or model_type == 'class':
 
         for model_name in model_names:
@@ -168,6 +193,8 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
             frag_contrib[model_name] = defaultdict(list)
 
+            frag_full_names = []  # used for save results - reinit for each model but should be identical
+
             m = joblib.load(os.path.join(model_dir, model_name + ".pkl"))
 
             sirms_file.reset_read()
@@ -175,41 +202,47 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
             while mol_names:
 
-                x = adjust_dataset(x, var_names, ref_var_names)
-                var_names = ref_var_names[:]
+                if activity_file:
+                    mol_names, x = adjust_mols(used_mol_names, mol_names, x)
 
-                if scale is not None:
-                    x = scale.transform(x)
+                if mol_names:   # non-empty list after removal of mols
+                    x = adjust_dataset(x, var_names, ref_var_names)
+                    var_names = ref_var_names[:]
 
-                x_frag_ids = [mol_frag_sep in n for n in mol_names]
-                x_train_ids = [not i for i in x_frag_ids]
+                    if scale is not None:
+                        x = scale.transform(x)
 
-                x_frag_mol_names, x_frag_frag_names = split_mol_frag_names(mol_names, x_frag_ids)
-                x_train_mol_names = [mol_names[i] for i, el in enumerate(x_train_ids) if el]
+                    x_frag_ids = [mol_frag_sep in n for n in mol_names]
+                    x_train_ids = [not i for i in x_frag_ids]
 
-                train_pred = predict(x[np.asarray(x_train_ids), ], m, model_name, model_type)
-                train_pred = dict(zip(x_train_mol_names, train_pred))
+                    frag_full_names.extend((mol_name for i, mol_name in zip(x_frag_ids, mol_names) if i))
 
-                for prop_name in prop_names:
-                    if prop_name == "overall":
-                        frag_pred = predict(x[np.asarray(x_frag_ids), ], m, model_name, model_type)
-                    else:
-                        x_frag_prep = prepare_dataset(x[np.asarray(x_train_ids), ],
-                                                      x[np.asarray(x_frag_ids), ],
-                                                      prop_name,
-                                                      var_names,
-                                                      x_train_mol_names,
-                                                      x_frag_mol_names)
-                        frag_pred = predict(x_frag_prep, m, model_name, model_type)
+                    x_frag_mol_names, x_frag_frag_names = split_mol_frag_names(mol_names, x_frag_ids)
+                    x_train_mol_names = [mol_names[i] for i, el in enumerate(x_train_ids) if el]
 
-                    frag_contrib[model_name][prop_name].extend([train_pred[mol_name] - frag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)])
+                    train_pred = predict(x[np.asarray(x_train_ids), ], m, model_name, model_type)
+                    train_pred = dict(zip(x_train_mol_names, train_pred))
 
-                    if save_pred:
-                        with open(save_pred_fname, "at") as f:
-                            for k, v in train_pred.items():
-                                f.write(k + "\t" + model_name + "\t" + prop_name + "\t" + str(v) + "\n")
-                            for m_name, f_name, pred_value in zip(x_frag_mol_names, x_frag_frag_names, frag_pred):
-                                f.write(m_name + mol_frag_sep + f_name + "\t" + model_name + "\t" + prop_name + "\t" + str(pred_value) + "\n")
+                    for prop_name in prop_names:
+                        if prop_name == "overall":
+                            frag_pred = predict(x[np.asarray(x_frag_ids), ], m, model_name, model_type)
+                        else:
+                            x_frag_prep = prepare_dataset(x[np.asarray(x_train_ids), ],
+                                                          x[np.asarray(x_frag_ids), ],
+                                                          prop_name,
+                                                          var_names,
+                                                          x_train_mol_names,
+                                                          x_frag_mol_names)
+                            frag_pred = predict(x_frag_prep, m, model_name, model_type)
+
+                        frag_contrib[model_name][prop_name].extend([train_pred[mol_name] - frag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)])
+
+                        if save_pred:
+                            with open(save_pred_fname, "at") as f:
+                                for k, v in train_pred.items():
+                                    f.write(k + "\t" + model_name + "\t" + prop_name + "\t" + str(v) + "\n")
+                                for m_name, f_name, pred_value in zip(x_frag_mol_names, x_frag_frag_names, frag_pred):
+                                    f.write(m_name + mol_frag_sep + f_name + "\t" + model_name + "\t" + prop_name + "\t" + str(pred_value) + "\n")
 
                 mol_names, var_names, x = sirms_file.read_next()
 
@@ -234,7 +267,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     #
     #             frag_contrib[model_name][prop_name] = [xtrain_pred[mol_name] - xfrag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)]
 
-    save_contrib(out_fname, frag_contrib, sirms_file.get_frag_full_names(), long_format, save_frag_ids)
+    save_contrib(out_fname, frag_contrib, frag_full_names, long_format, save_frag_ids)
 
 
 def main():
@@ -251,6 +284,9 @@ def main():
     parser.add_argument('--output_long_format', action='store_true', default=False,
                         help='store output in long instead of short format. Long format is easier to parse but takes '
                              'more disk space. Default: false.')
+    parser.add_argument('-a', '--activity_file', metavar='activity_file.txt', required=False, default=None,
+                        help='path to the file with activity values. If specified only molecules mention in this file '
+                             'will be used for calculation of contributions. Default: None.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svr pls knn]', required=True, nargs='*',
                         help='file name of saved models (without extension)')
     parser.add_argument('-d', '--models_dir', metavar='path_to_models', required=True,
@@ -282,12 +318,13 @@ def main():
         if o == "input_format": input_format = v
         if o == "output_long_format": long_format = v
         if o == "save_frag_ids": save_frag_ids = v
+        if o == "activity_file": activity_file = v
     if input_format not in ['txt', 'svm']:
         print("Wrong input file format - %s. Only txt and svm file formats are allowed." % input_format)
         exit()
 
     main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_type, verbose, save_pred,
-                input_format, long_format, save_frag_ids)
+                input_format, long_format, save_frag_ids, activity_file)
 
 
 if __name__ == '__main__':
