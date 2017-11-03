@@ -7,6 +7,8 @@ from rdkit import Chem
 __author__ = 'pavel'
 
 patt_remove_map = re.compile("\[\*\:[0-9]+\]")   # to change CC([*:1])O to CC([*])O
+patt_remove_isotope_1 = re.compile("\[[0-9]+([a-z]+)H?[0-9]?\]")   # to change CC([42cH3])[*:1] to CC(c)[*:1]
+patt_remove_isotope_2 = re.compile("(\[)[0-9]+([a-z]+)H?[0-9]?(\+\])")   # to change CC([42nH+])[*:1] CC([n+])[*:1]
 
 
 def get_submol(mol, atom_ids):
@@ -183,6 +185,62 @@ def __standardize_smiles_with_att_points(mol, keep_stereo=False):
     return s
 
 
+def __get_std_env_smiles(env):
+    # env: Mol
+    #
+    # The issue is different SMILES if atom ids (order) is different. RDKit ignores atom types during canonicalization.
+    # m = RWMol()
+    #
+    # for i in range(3):
+    #     a = Atom(6)
+    #     m.AddAtom(a)
+    # a = Atom(0)
+    # m.AddAtom(a)
+    #
+    # m.GetAtomWithIdx(0).SetIsAromatic(True)  # set atom 0 as aromatic
+    # m.GetAtomWithIdx(3).SetAtomMapNum(1)
+    #
+    # m.AddBond(0, 1, Chem.rdchem.BondType.SINGLE)
+    # m.AddBond(1, 2, Chem.rdchem.BondType.SINGLE)
+    # m.AddBond(1, 3, Chem.rdchem.BondType.SINGLE)
+    #
+    # Chem.MolToSmiles(m)
+    #
+    # OUTPUT: 'cC(C)[*:1]'
+    #
+    # # 2 ===========
+    #
+    # m2 = RWMol()
+    #
+    # for i in range(3):
+    #     a = Atom(6)
+    #     m2.AddAtom(a)
+    # a = Atom(0)
+    # m2.AddAtom(a)
+    #
+    # m2.GetAtomWithIdx(2).SetIsAromatic(True)  # set atom 2 as aromatic
+    # m2.GetAtomWithIdx(3).SetAtomMapNum(1)
+    #
+    # m2.AddBond(0, 1, Chem.rdchem.BondType.SINGLE)
+    # m2.AddBond(1, 2, Chem.rdchem.BondType.SINGLE)
+    # m2.AddBond(1, 3, Chem.rdchem.BondType.SINGLE)
+    #
+    # Chem.MolToSmiles(m2)
+    #
+    # OUTPUT: 'CC(c)[*:1]'
+    #
+    #
+    # Solution: set isotop for all aromatic atoms and then replace in output SMILES
+    # Improvement 2: since the canon algorithm depends on number of hydrogens attached to an atom set no implicit Hs
+
+    for a in env.GetAtoms():
+        if a.GetIsAromatic():
+            a.SetIsotope(42)
+        a.SetNoImplicit(True)
+    s = Chem.MolToSmiles(env, isomericSmiles=True)
+    return patt_remove_isotope_2.sub("\\1\\2\\3", patt_remove_isotope_1.sub('\\1', s))
+
+
 def get_std_context_core_permutations(context, core, radius, keep_stereo):
     """
     INPUT:
@@ -235,7 +293,7 @@ def get_std_context_core_permutations(context, core, radius, keep_stereo):
 
         env = __get_context_env(context, radius)   # cut context to radius
         __standardize_att_by_env(env, core, keep_stereo)
-        env_smi = Chem.MolToSmiles(env, isomericSmiles=keep_stereo)
+        env_smi = __get_std_env_smiles(env)
 
         if att_num == 1:
 
