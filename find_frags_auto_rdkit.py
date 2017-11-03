@@ -11,12 +11,11 @@ import os
 import re
 import argparse
 
-from itertools import combinations, permutations
 from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdMMPA
 
-from mol_context import get_canon_context_core, get_submol
+from mol_context import get_canon_context_core
 
 
 patt = re.compile("\[\*\:[0-9]+\]")  # to change CC([*:1])O to CC([*])O
@@ -26,87 +25,6 @@ def replace_no2(mol):
     query = Chem.MolFromSmarts('n(:o):o')
     repl = Chem.MolFromSmiles('[N+](=O)[O-]')
     return AllChem.ReplaceSubstructs(mol, query, repl, replaceAll=True)[0]
-
-
-def frag_mol_by_cuts(mol, cut_list, keep_stereo, radius):
-
-    em = Chem.EditableMol(mol)
-
-    output = []
-    ap_ids = []
-
-    for i, cut in enumerate(cut_list):   # this can be replaced with FragmentOnBonds
-        em.RemoveBond(cut[0], cut[1])
-        ap1 = em.AddAtom(Chem.Atom(0))
-        ap_ids.append(ap1)
-        em.AddBond(cut[0], ap1, Chem.BondType.SINGLE)
-        ap2 = em.AddAtom(Chem.Atom(0))
-        ap_ids.append(ap2)
-        em.AddBond(cut[1], ap2, Chem.BondType.SINGLE)
-
-    mol = em.GetMol()
-    mol.UpdatePropertyCache()
-
-    # label cut points
-    for i, ids in enumerate(zip(ap_ids[0::2], ap_ids[1::2])):
-        for id in ids:
-            mol.GetAtomWithIdx(id).SetAtomMapNum(i + 1)
-
-    # if split produce more than one fragment with several cuts it is illegible
-    # ex: C* *CO* *CC* *O
-    att_num = []
-    frags = Chem.GetMolFrags(mol, asMols=False)
-    for ids in frags:
-        att_num.append(sum(mol.GetAtomWithIdx(i).GetAtomicNum() == 0 for i in ids))
-    if sum(i > 1 for i in att_num) > 1:
-        return output
-
-    # remove Hs from ids
-    frags = tuple(tuple(i for i in ids if mol.GetAtomWithIdx(i).GetAtomicNum() != 1) for ids in frags)
-
-    # one cut
-    if len(frags) == 2:
-        for core_ids, context_ids in permutations(frags, 2):
-            core = get_submol(mol, core_ids)
-            context = get_submol(mol, context_ids)
-
-            print(Chem.MolToSmiles(core), Chem.MolToSmiles(context))
-
-            line = []
-            for r in radius:
-
-                print(r)
-
-                if r > 0:
-                    env_smi, core_smi = get_canon_context_core(context, core, r, keep_stereo)
-                else:
-                    env_smi, core_smi = get_canon_context_core('', core, r, keep_stereo)
-                line.append('%s|%s' % (core_smi, env_smi))
-            output.append(('||'.join(line), tuple(sorted(i for i in core_ids if i not in ap_ids))))
-    # two amd more cuts
-    else:
-        core_ids = []
-        context_ids = []
-        for n, f in zip(att_num, frags):
-            if n == 1:
-                context_ids.extend(f)
-            else:
-                core_ids.extend(f)
-        core = get_submol(mol, core_ids)
-        context = get_submol(mol, context_ids)
-
-        print(Chem.MolToSmiles(core), Chem.MolToSmiles(context))
-
-        line = []
-        for r in radius:
-            if r > 0:
-                env_smi, core_smi = get_canon_context_core(context, core, r, keep_stereo)
-            else:
-                env_smi, core_smi = get_canon_context_core('', core, r, keep_stereo)
-            line.append('%s|%s' % (core_smi, env_smi))
-        output.append(('||'.join(line), tuple(sorted(i for i in core_ids if i not in ap_ids))))
-
-    return output
 
 
 def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
@@ -145,8 +63,6 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
     for atom in mol.GetAtoms():
         atom.SetIntProp("Index", atom.GetIdx())
 
-    # all_cuts = mol.GetSubstructMatches(query)
-
     frags = rdMMPA.FragmentMol(mol, pattern=query, maxCuts=max_cuts, resultsAsMols=True, maxCutBonds=30)
 
     for core, chains in frags:
@@ -168,16 +84,10 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
             if frag_name:
                 output.append((frag_name, get_atom_prop(core)))
 
-    # for i in range(1, max_cuts + 1):
-    #     for comb in combinations(all_cuts, i):
-    #         output.extend(frag_mol_by_cuts(mol, comb, keep_stereo, radius))
-
     return output
 
 
 def main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname):
-
-    query = Chem.MolFromSmarts(query)
 
     with open(out_txt, 'wt') as f:
         for i, mol in enumerate(Chem.SDMolSupplier(in_sdf, sanitize=False, removeHs=False)):
