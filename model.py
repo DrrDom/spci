@@ -218,7 +218,6 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
         if os.path.exists(fpath):
             os.remove(fpath)
 
-
     model_stat_fname = os.path.join(models_dir, "models_stat.txt")
 
     # load y

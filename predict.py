@@ -118,7 +118,7 @@ def check_bound_box(x, bound_box_constrains):
 
 def load_models(model_dir, model_names):
     """
-    Read all model objects from each model file and store inthe list.
+    Read all model objects from each model file and store in the list.
     Returns corresponding names of models by adding _N (e.g. svm_0, etc)
     :param model_dir: path to dir where models are stored
     :param model_names: list of model names (file names without .pkl extension)
@@ -229,10 +229,6 @@ def main():
     parser.add_argument('-o', '--output', metavar='predictions.txt', required=True,
                         help='output text file with predicitions. Contains predictions of all models and their consensus. Special case:if' ' there are multiple models of individual'
                              'ML methods in the models_dir, then consensus for each metod and consensus of those consensuses (final consensus) will be computed.')
-    # parser.add_argument('-r', '--training_set', metavar='training_set_descriptors.txt', required=True,
-    #                     help='text file with descriptors nad their names of training set compounds.')
-    # parser.add_argument('--train_format', metavar='txt|svm', required=False, default='txt',
-    #                     help='format of the input file with descriptors (txt|svm). Default: txt.')
     parser.add_argument('-m', '--models', metavar='[rf gbm svr pls knn]', required=True, nargs='*',
                         help='file names of saved models (without extension).')
     parser.add_argument('-d', '--models_dir', metavar='path_to_models', required=True,
@@ -251,8 +247,6 @@ def main():
         if o == "input": x_fname = v
         if o == "input_format": input_format = v
         if o == "output": out_fname = v
-        # if o == "training_set": train_x_fname = v
-        # if o == "train_format": train_format = v
         if o == "models": model_names = v
         if o == "models_dir": model_dir = v
         if o == "model_type": model_type = v
