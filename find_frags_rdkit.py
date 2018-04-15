@@ -61,7 +61,7 @@ def load_sdf_fragments(fname):
 
     for mol in Chem.SDMolSupplier(fname):
         if mol is not None:
-            smi = Chem.MolFromSmiles(mol)
+            smi = Chem.MolToSmiles(mol)
             if smi not in cansmi:
                 cansmi.add(smi)
                 frags.append({"name": smi, "query": mol})

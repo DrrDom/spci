@@ -28,10 +28,10 @@ from collections import OrderedDict
 import sdf_field2title
 import calc_atomic_properties_chemaxon
 import model
-import find_frags_indigo as find_frags
-import find_rings_indigo as find_rings
-import find_murcko_indigo as find_murcko
-import find_frags_auto_indigo as find_frags_auto
+import find_frags_rdkit as find_frags
+# import find_rings_indigo as find_rings
+import find_murcko_rdkit as find_murcko
+import find_frags_auto_rdkit as find_frags_auto
 import calc_frag_contrib
 import plot_contributions
 import extractsdf
@@ -640,24 +640,26 @@ class Tab_2(ttk.Frame):
                                        in_frags=frag_fname,
                                        remove_all=False,
                                        verbose=True,
-                                       error_fname=os.path.join(main_dir, "indigo_errors.log"))
-            elif self.frags_choice.get() == 'rings':
-                find_rings.main_params(in_sdf=sdf_fname,
-                                       out_txt=ids_fname,
-                                       verbose=True,
-                                       error_fname=os.path.join(main_dir, "indigo_errors.log"))
+                                       error_fname=os.path.join(main_dir, "rdkit_fragmentation_errors.log"))
+            # elif self.frags_choice.get() == 'rings':
+            #     find_rings.main_params(in_sdf=sdf_fname,
+            #                            out_txt=ids_fname,
+            #                            verbose=True,
+            #                            error_fname=os.path.join(main_dir, "indigo_errors.log"))
             elif self.frags_choice.get() == 'murcko':
                 find_murcko.main_params(in_sdf=sdf_fname,
                                         out_txt=ids_fname,
                                         verbose=True,
-                                        error_fname=os.path.join(main_dir, "indigo_errors.log"))
+                                        error_fname=os.path.join(main_dir, "rdkit_fragmentation_errors.log"))
             elif self.frags_choice.get() == 'auto':
                 find_frags_auto.main_params(in_sdf=sdf_fname,
                                             out_txt=ids_fname,
                                             query=self.auto_schemes[self.auto_frags_choice.get()],
                                             max_cuts=3,
+                                            keep_stereo=False,
+                                            radius=0,
                                             verbose=True,
-                                            error_fname=os.path.join(main_dir, "indigo_errors.log"))
+                                            error_fname=os.path.join(main_dir, "rdkit_fragmentation_errors.log"))
 
             # calc sirms descriptors
             if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
@@ -761,8 +763,8 @@ class Tab_2(ttk.Frame):
 
         ttk.Radiobutton(frame, text='Default fragments', name='default_frag', value='default', variable=self.frags_choice).\
             grid(column=0, row=0, sticky=tk.W, padx=5, pady=(3, 1))
-        ttk.Radiobutton(frame, text='Ring systems', name='rings_frag', value='rings', variable=self.frags_choice).\
-            grid(column=0, row=1, sticky=tk.W, padx=5, pady=(0, 1))
+        # ttk.Radiobutton(frame, text='Ring systems', name='rings_frag', value='rings', variable=self.frags_choice).\
+        #     grid(column=0, row=1, sticky=tk.W, padx=5, pady=(0, 1))
         # ttk.Radiobutton(frame, text='CCQ fragments', name='ccq_frag', value='ccq', variable=self.frags_choice, state='disabled').\
         #     grid(column=0, row=3, sticky=tk.W, padx=5, pady=(0, 1))
         # ttk.Radiobutton(frame, text='RECAP fragments', name='recap_frag', value='recap', variable=self.frags_choice, state='disabled').\
