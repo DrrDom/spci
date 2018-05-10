@@ -12,6 +12,7 @@ import os
 import argparse
 import platform
 import numpy as np
+from itertools import tee
 from sklearn.externals import joblib
 from collections import defaultdict, OrderedDict, Counter
 
@@ -119,7 +120,7 @@ def adjust_dataset(x, x_col_names, ref_col_names, default_value=0):
 
 
 def predict(x, model, model_name, model_type):
-
+   
     pred = None
 
     if model_type == 'reg':
@@ -131,7 +132,6 @@ def predict(x, model, model_name, model_type):
     elif model_type == 'class':
         pos_id = model.classes_.tolist().index(1)
         pred = [i[pos_id] for i in model.predict_proba(x)]
-
     return pred
 
 
@@ -197,7 +197,6 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
     if activity_file:
         used_mol_names = set(read_mol_names_from_activity_file(activity_file))
-
     if model_type == 'reg' or model_type == 'class':
 
         for model_name in model_names:
@@ -209,16 +208,16 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
             frag_full_names = []  # used for save results - reinit for each model but should be identical
 
-            models = load_multi_obj(os.path.join(model_dir, model_name + ".pkl"))
-
+            
             sirms_file.reset_read()
             mol_names, var_names, x = sirms_file.read_next()
 
             while mol_names:
+                models, models_1 = tee(load_multi_obj(os.path.join(model_dir, model_name + ".pkl")))
 
                 if activity_file:
                     mol_names, x = adjust_mols(used_mol_names, mol_names, x)
-
+                    
                 if mol_names:   # non-empty list after removal of mols
                     x = adjust_dataset(x, var_names, ref_var_names)
                     var_names = ref_var_names[:]
@@ -239,7 +238,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
                     for prop_name in prop_names:
                         if prop_name == "overall":
-                            frag_pred = predict_avg(x[np.asarray(x_frag_ids), ], models, model_name, model_type)
+                            frag_pred = predict_avg(x[np.asarray(x_frag_ids), ], models_1, model_name, model_type)
                         else:
                             x_frag_prep = prepare_dataset(x[np.asarray(x_train_ids), ],
                                                           x[np.asarray(x_frag_ids), ],
@@ -247,7 +246,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
                                                           var_names,
                                                           x_train_mol_names,
                                                           x_frag_mol_names)
-                            frag_pred = predict_avg(x_frag_prep, models, model_name, model_type)
+                            frag_pred = predict_avg(x_frag_prep, models_1, model_name, model_type)
 
                         frag_contrib[model_name][prop_name].extend([train_pred[mol_name] - frag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)])
 
