@@ -208,12 +208,10 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
 
             frag_full_names = []  # used for save results - reinit for each model but should be identical
 
-            
             sirms_file.reset_read()
             mol_names, var_names, x = sirms_file.read_next()
 
             while mol_names:
-                models, models_1 = tee(load_multi_obj(os.path.join(model_dir, model_name + ".pkl")))
 
                 if activity_file:
                     mol_names, x = adjust_mols(used_mol_names, mol_names, x)
@@ -233,12 +231,14 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
                     x_frag_mol_names, x_frag_frag_names = split_mol_frag_names(mol_names, x_frag_ids)
                     x_train_mol_names = [mol_names[i] for i, el in enumerate(x_train_ids) if el]
 
+                    models = load_multi_obj(os.path.join(model_dir, model_name + ".pkl"))
                     train_pred = predict_avg(x[np.asarray(x_train_ids), ], models, model_name, model_type)
                     train_pred = dict(zip(x_train_mol_names, train_pred))
 
                     for prop_name in prop_names:
+                        models = load_multi_obj(os.path.join(model_dir, model_name + ".pkl"))
                         if prop_name == "overall":
-                            frag_pred = predict_avg(x[np.asarray(x_frag_ids), ], models_1, model_name, model_type)
+                            frag_pred = predict_avg(x[np.asarray(x_frag_ids), ], models, model_name, model_type)
                         else:
                             x_frag_prep = prepare_dataset(x[np.asarray(x_train_ids), ],
                                                           x[np.asarray(x_frag_ids), ],
@@ -246,7 +246,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
                                                           var_names,
                                                           x_train_mol_names,
                                                           x_frag_mol_names)
-                            frag_pred = predict_avg(x_frag_prep, models_1, model_name, model_type)
+                            frag_pred = predict_avg(x_frag_prep, models, model_name, model_type)
 
                         frag_contrib[model_name][prop_name].extend([train_pred[mol_name] - frag_pred[i] for i, mol_name in enumerate(x_frag_mol_names)])
 

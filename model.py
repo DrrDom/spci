@@ -221,7 +221,6 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
     model_stat_fname = os.path.join(models_dir, "models_stat.txt")
 
     # load y
-    
     y = load_y(y_fname)
 
     # load x
@@ -232,7 +231,7 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
     else:
         print("Illegal value of input format: " % input_format)
         exit()
-    print("ll")
+
     # process y
     y = np.asarray([y[n] for n in mol_names])
 
