@@ -48,7 +48,7 @@ def load_frags_long(contrib_fname):
 def append_wide(contrib_fname, fr_dict, fr_lst, mol_dict):
 
     m = ["mol_size"]
-    f = ["fr_size"]
+    f = ["frag_size"]
     p = ["relative_frag_size"]
 
     for mol, frag in fr_lst:
@@ -65,7 +65,7 @@ def append_wide(contrib_fname, fr_dict, fr_lst, mol_dict):
 def append_long(contrib_fname, out_fname, fr_dict, mol_dict):
     with open(out_fname, "wt") as out:
         with open(contrib_fname, "rt") as contr_file:
-            out.write(contr_file.readline().strip() + "\t" + "\t".join(["mol_size", "fr_size", "relative_frag_size"]) + "\n")
+            out.write(contr_file.readline().strip() + "\t" + "\t".join(["mol_size", "frag_size", "relative_frag_size"]) + "\n")
             for line in contr_file:
                 tmp = line.strip().split()
                 out.write(line.strip() + "\t" + "\t".join(map(str, [mol_dict[tmp[0]],
@@ -83,7 +83,7 @@ def main():
                         help='input text file with fragments contributions')
     parser.add_argument('-f', '--input_format', metavar='wide|long', default='wide',
                         help='format of input file wide/long. Default: wide.')
-    parser.add_argument('-o', '--output', metavar='output_contributions.txt', 
+    parser.add_argument('-o', '--output', metavar='output_contributions.txt', default=None,
                         help='Output text file, will contain same data as input plus added cols with calculated data.'
                              'Required only for long format(otherwise will not be created: new data will be appended '
                              'to input file).')
