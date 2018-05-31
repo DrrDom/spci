@@ -420,7 +420,8 @@ class Tab_1(ttk.Frame):
                           model_type=self.models_frame.model_type.get(),
                           verbose=1,
                           cv_predictions=True,
-                          input_format='svm')
+                          input_format='svm',
+                          imbalanced=False)
 
         # update list of models to plot
         self.master.children['tab_3']._show_models_list()
