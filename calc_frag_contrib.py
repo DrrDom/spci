@@ -178,7 +178,7 @@ def main_params(x_fname, out_fname, model_names, model_dir, prop_names, model_ty
     if save_pred:
         save_pred_fname = os.path.splitext(out_fname)[0] + "_pred.txt"
         if os.path.isfile(save_pred_fname):
-            print("File with prediction was erased.")
+            print("File with predictions was erased.")
             os.remove(save_pred_fname)
 
     sirms_file = SirmsFile(x_fname, file_format=input_format, frag_file=True, chunks=1000)

@@ -70,18 +70,21 @@ class StatWindow(tk.Toplevel):
 
         if keep_only_important_details:
             for i, line in enumerate(d['lines']):
-                if line[1] == 'gbm':
+                if line[1] == 'gbm' or line[1].startswith('gbm_'):
                     names = ['subsample', 'learning_rate', 'n_estimators', 'max_features', 'max_depth']
-                if line[1] == 'rf':
+                elif line[1] == 'rf' or line[1].startswith('rf_'):
                     names = ['n_estimators', 'max_features']
-                if line[1] == 'svm':
+                elif line[1] == 'svm' or line[1].startswith('svm_'):
                     names = ['kernel', 'C', 'gamma']
-                if line[1] == 'knn':
+                elif line[1] == 'knn' or line[1].startswith('knn_'):
                     names = ['n_neighbors']
-                if line[1] == 'pls':
+                elif line[1] == 'pls' or line[1].startswith('pls_'):
                     names = ['n_components']
-                tmp = ast.literal_eval('{' + line[-1] + '}')
-                d['lines'][i][-1] = '; '.join([k + ' = ' + str(v) for k, v in tmp.items() if k in names])
+                else:
+                    "Oops! That was a stupid error."
+                if len(line) == len(d['header']):
+                    tmp = ast.literal_eval('{' + line[-1] + '}')
+                    d['lines'][i][-1] = '; '.join([k + ' = ' + str(v) for k, v in tmp.items() if k in names])
 
         return d
 
@@ -661,7 +664,7 @@ class Tab_2(ttk.Frame):
                                             query=self.auto_schemes[self.auto_frags_choice.get()],
                                             max_cuts=3,
                                             keep_stereo=False,
-                                            radius=0,
+                                            radius=[0],
                                             verbose=True,
                                             error_fname=os.path.join(main_dir, "rdkit_fragmentation_errors.log"))
 
