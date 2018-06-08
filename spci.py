@@ -10,7 +10,6 @@
 
 import os
 import re
-from runpy import run_path
 import sys
 import ast
 import glob
@@ -192,6 +191,8 @@ class ModelsFrame(ttk.Labelframe):
         self.model_gbm_class = tk.BooleanVar(value=True)
         self.model_knn_class = tk.BooleanVar(value=False)
 
+        self.model_imbalanced = tk.BooleanVar(value=False)
+
         ttk.Radiobutton(self, text='Regression (RF, GBM, SVM, PLS)', name='model_type_reg', value='reg', variable=self.model_type).grid(column=0, row=0, sticky=(tk.W), padx=5, pady=5)
         ttk.Radiobutton(self, text='Binary classification (0-1) (RF, GBM, SVM)', name='model_type_class', value='class', variable=self.model_type).grid(column=1, row=0, sticky=(tk.W), padx=5, pady=5)
 
@@ -207,6 +208,8 @@ class ModelsFrame(ttk.Labelframe):
             ttk.Checkbutton(self, variable=self.model_svm_class, name='chk_svr_class', text='Support vector classification (SVC)', command=self.class_model_checked).grid(column=1, row=2, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
             ttk.Checkbutton(self, variable=self.model_gbm_class, name='chk_gbm_class', text='Gradient boosting classification (GBC)', command=self.class_model_checked).grid(column=1, row=3, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
             ttk.Checkbutton(self, variable=self.model_knn_class, name='chk_knn_class', text='k-Nearest neighbors (kNN)', command=self.class_model_checked).grid(column=1, row=4, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
+
+        ttk.Checkbutton(self, variable=self.model_imbalanced, name='chk_imbalanced', text='Use multiple undersampling (for imbalanced data sets)').grid(column=1, row=10, sticky=(tk.W, tk.E), padx=5, pady=(1, 0))
 
         self.columnconfigure(0, pad=80)
 
@@ -245,6 +248,9 @@ class ModelsFrame(ttk.Labelframe):
         models = self.get_selected_models()
         return [m + '_' + self.model_type.get() for m in models]
 
+    def get_imbalanced(self):
+        return self.model_imbalanced.get()
+
 
 class Tab_1(ttk.Frame):
 
@@ -276,26 +282,29 @@ class Tab_1(ttk.Frame):
                 output.append(line)
         open(filename, 'wt').writelines(output)
 
+    def create_mol_titles(self, in_fname, out_fname):
+        if self.compound_names.get() == 'title':
+            shutil.copyfile(in_fname, out_fname)
+        elif self.compound_names.get() == 'gen':
+            sdf_field2title.main_params(in_fname, None, out_fname)
+        elif self.compound_names.get() == 'field':
+            sdf_field2title.main_params(in_fname, self.sdf_id_field_name.get().strip(), out_fname)
+        else:
+            print("error occurred which should never be possible")
+
     def __build_models(self):
 
         if self.sdf_path.get() == '':
             messagebox.showerror('ERROR!', 'Specify sdf filename and path.')
             return
 
+        output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
+
         # if x.txt does not exist then do all standardization and descriptors calculation
         if not os.path.isfile(os.path.join(os.path.dirname(self.sdf_path.get()), 'x.txt')):
 
-            # process mol title
-            if self.compound_names.get() == 'title':
-                tmp_sdf = None
-            else:
-                tmp_sdf = self.sdf_path.get().rsplit('.', 1)[0] + '_titles.sdf'
-                if self.compound_names.get() == 'gen':
-                    sdf_field2title.main_params(self.sdf_path.get(), None, tmp_sdf)
-                elif self.compound_names.get() == 'field':
-                    sdf_field2title.main_params(self.sdf_path.get(), self.sdf_id_field_name.get().strip(), tmp_sdf)
-
-            input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
+            if os.path.isfile(output_sdf):
+                os.remove(output_sdf)
 
             # standardization and property labeling
             if self.chemaxon_usage.get() == 'with_chemaxon':
@@ -306,11 +315,11 @@ class Tab_1(ttk.Frame):
                 shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
                                 os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
                 # run standardize
-                std_sdf_tmp = input_sdf + '.std.sdf'
+                std_sdf_tmp = self.sdf_path.get() + '.std.sdf'
                 run_params = ['standardize',
                               '-c',
                               quote_str(os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml')),
-                              quote_str(input_sdf),
+                              quote_str(self.sdf_path.get()),
                               '-f',
                               'sdf',
                               '-o',
@@ -319,27 +328,21 @@ class Tab_1(ttk.Frame):
 
                 # calc atomic properties with Chemaxon
                 print('Atomic properties calculation is in progress...')
-                # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
-                output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
+                prop_sdf_tmp = std_sdf_tmp + '.prop.sdf'
                 calc_atomic_properties_chemaxon.main_params(in_fname=std_sdf_tmp,
-                                                            out_fname=output_sdf,
+                                                            out_fname=prop_sdf_tmp,
                                                             prop=['charge', 'logp', 'acc', 'don', 'refractivity'],
                                                             pH=None,
                                                             cxcalc_path='cxcalc')
 
+                self.create_mol_titles(prop_sdf_tmp, output_sdf)
+
                 os.remove(std_sdf_tmp)
-                if tmp_sdf is not None:
-                    os.remove(tmp_sdf)
+                os.remove(prop_sdf_tmp)
 
             else:
 
-                output_sdf = self.sdf_path.get().rsplit(".")[0] + '_std_lbl.sdf'
-                if os.path.isfile(output_sdf):
-                    os.remove(output_sdf)
-                if tmp_sdf is None:
-                    shutil.copyfile(input_sdf, output_sdf)
-                else:
-                    os.rename(tmp_sdf, output_sdf)
+                self.create_mol_titles(self.sdf_path.get(), output_sdf)
 
             # copy setup.txt to folder with sdf file
             shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
@@ -421,7 +424,7 @@ class Tab_1(ttk.Frame):
                           verbose=1,
                           cv_predictions=True,
                           input_format='svm',
-                          imbalanced=False)
+                          imbalanced=self.models_frame.get_imbalanced())
 
         # update list of models to plot
         self.master.children['tab_3']._show_models_list()
