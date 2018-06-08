@@ -21,7 +21,6 @@ def get_fields(molstr):
     d = dict()
     i = 0
     while i < len(molstr):
-        print(patt)
         if patt.fullmatch(molstr[i]):
             d[patt.sub('\\1', molstr[i])] = molstr[i + 1]
             i += 1
