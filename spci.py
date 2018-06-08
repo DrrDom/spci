@@ -1106,7 +1106,7 @@ def main():
 
     content = ttk.Frame(root)
 
-    lbl_copyright = ttk.Label(content, text='(c) Pavel Polishchuk 2014-2016 - v0.2.1b')
+    lbl_copyright = ttk.Label(content, text='(c) Pavel Polishchuk 2014-2018 - v1.0.0')
 
     tabs = ttk.Notebook(content)
     tab_1 = Tab_1(tabs, 'Build models')
