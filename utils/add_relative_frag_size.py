@@ -100,10 +100,12 @@ def main():
     parser.add_argument('-f', '--input_format', metavar='wide|long', default='wide',
                         help='format of input file wide/long. Default: wide.')
     parser.add_argument('-o', '--output', metavar='output_contributions.txt', default=None,
-                        help='Output text file, will contain same data as input plus added cols with calculated data.'
-                             'Required for long format. For wide format it can be omitted, in this case new rows '
-                             'will be appended to the input file with contributions).')
-    parser.add_argument('-s','--sdf', metavar='input.sdf', required=True,
+                        help='output text file will contain the same data as the input file with appended cols '
+                             '(long format) or rows (wide format) with calculated data. '
+                             'This argument is required only for long format. '
+                             'If it is omitted for wide format new data will be appended to the input file '
+                             '(the file will be overwritten).')
+    parser.add_argument('--sdf', metavar='input.sdf', required=True,
                         help='input sdf with molecules from which frags were derived. Should contain molecule titles '
                              'identical to those used in the input file with contributions.')
 
@@ -115,7 +117,7 @@ def main():
         if o == "sdf": sd_fname = v
        
     if inp_format not in ['wide', 'long']:
-        print("Wrong input file format - %s. Only wide and long file formats are allowed." % input_format)
+        print("Wrong input file format - %s. Only wide and long file formats are allowed." % inp_format)
         exit()
     if inp_format == 'long' and not out_fname:
         print("Error. -o argument is missing. For long format -o --out argument is required")
