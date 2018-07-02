@@ -11,8 +11,8 @@ Features
 -----
 1. Easy to use straightforward workflow with GUI.
 2. Automatic model building and cross-validation.
-3. Build models for imbalanced data set using multiple oversampling approach.
-4. Model prediction.
+3. Build models for imbalanced data set using the multiple oversampling approach.
+4. Prediction with built models.
 5. Several fragmentation schemes to compute fragment contributions of:
   a) ring systems;
   b) Murcko scaffolds;
@@ -47,7 +47,7 @@ License
 -----
 GPLv3
 
-What'snew
+What's new
 -----
 **1.0.0**
 - RDKit is used as a backend instead of Indigo
