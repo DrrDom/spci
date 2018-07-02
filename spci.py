@@ -560,9 +560,9 @@ class Tab_1(ttk.Frame):
         cmbbox.bind('<<ComboboxSelected>>', self.__set_compound_names_choice_event)
         # ttk.Entry(inner_frame, width=20, textvariable=self.sdf_id_field_name).grid(column=1, row=3, sticky=(tk.W), padx=5, pady=1)
 
-        ttk.Label(frame, text='Path to text file with property values').grid(column=0, row=5, sticky=(tk.W), padx=5, pady=(15, 0))
-        ttk.Entry(frame, width=70, textvariable=self.property_file_path).grid(column=0, row=7, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
-        ttk.Button(frame, text='Browse...', command=self.__select_property_file_path).grid(column=1, row=7, sticky=(tk.W), padx=5, pady=(0, 5))
+        # ttk.Label(frame, text='Path to text file with property values').grid(column=0, row=5, sticky=(tk.W), padx=5, pady=(15, 0))
+        # ttk.Entry(frame, width=70, textvariable=self.property_file_path).grid(column=0, row=7, sticky=(tk.W, tk.E), padx=5, pady=(0, 5))
+        # ttk.Button(frame, text='Browse...', command=self.__select_property_file_path).grid(column=1, row=7, sticky=(tk.W), padx=5, pady=(0, 5))
 
         self.models_frame = ModelsFrame(self, 'Models', 0, 10, True)
 
