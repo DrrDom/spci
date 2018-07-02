@@ -2,6 +2,8 @@ __pycache__
 .idea
 tests
 manual/*.docx
+manual/*.png
+manual/*.tif
 batch
 output_zip
 history.txt
