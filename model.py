@@ -318,19 +318,23 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
             if current_model == "svm":
 
                 # choosing optimal parameters
-                param_grid = {"C": [10 ** i for i in range(0, 5)],
-                              "gamma": [10 ** i for i in range(-6, 0)]}
                 if model_type == "reg":
+                    param_grid = {"C": [10 ** i for i in range(0, 5)],
+                                  "epsilon": [0.3, 0.25, 0.2, 0.15, 0.1, 0.05, 0.01]}
                     m = ms.GridSearchCV(svm.SVR(kernel='rbf'), param_grid, n_jobs=ncores, cv=cv, refit=False,
                                         verbose=verbose)
                 elif model_type == "class":
+                    param_grid = {"C": [10 ** i for i in range(0, 5)],
+                                  "gamma": [10 ** i for i in range(-6, 0)]}
                     m = ms.GridSearchCV(svm.SVC(kernel='rbf', random_state=seed), param_grid, n_jobs=ncores, cv=cv, refit=False,
                                         verbose=verbose)
                 m.fit(x[subset], y[subset])
 
+                print(m.cv_results_)
+
                 # final model
                 if model_type == "reg":
-                    m = svm.SVR(kernel='rbf', C=m.best_params_["C"], gamma=m.best_params_["gamma"])
+                    m = svm.SVR(kernel='rbf', C=m.best_params_["C"], epsilon=m.best_params_["epsilon"])
                 elif model_type == "class":
                     m = svm.SVC(kernel='rbf', C=m.best_params_["C"], gamma=m.best_params_["gamma"],
                                 probability=True, random_state=seed)
