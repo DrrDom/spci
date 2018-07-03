@@ -482,20 +482,17 @@ class Tab_1(ttk.Frame):
         self.master.children['tab_3']._show_models_list()
 
     def __read_sdf_field_names(self, fname):
-        field_names = []
+        p = re.compile('> {1,2}<(.*)>( +\([0-9]+\))?')
+        field_names = set()
         if not os.path.isfile(fname):
             messagebox.showerror('ERROR!', "Specified file name doesn't exist.")
             return field_names
-        field_pattern = "^> +<(.*)>( *\([0-9]*\) *)?$"
-        m = re.compile(field_pattern)
         with open(fname) as f:
-            line = f.readline().rstrip()
-            while line != '$$$$':
-                # one or two spaces between > and < can be possible
-                if m.match(line):
-                    field_names.append(re.sub(field_pattern, "\\1", line))
-                line = f.readline().rstrip()
-        return field_names
+            for line in f:
+                line = line.rstrip()
+                if p.fullmatch(line):
+                    field_names.add(p.sub('\\1', line))
+        return sorted(field_names)
 
     def __set_compound_names_choice_event(self, event):
         self.compound_names.set(value='field')
