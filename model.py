@@ -320,7 +320,7 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
                 # choosing optimal parameters
                 if model_type == "reg":
                     param_grid = {"C": [10 ** i for i in range(0, 5)],
-                                  "epsilon": [0.3, 0.25, 0.2, 0.15, 0.1, 0.05, 0.01]}
+                                  "epsilon": [0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05, 0.01]}
                     m = ms.GridSearchCV(svm.SVR(kernel='rbf'), param_grid, n_jobs=ncores, cv=cv, refit=False,
                                         verbose=verbose)
                 elif model_type == "class":
@@ -329,8 +329,6 @@ def main_params(x_fname, y_fname, model_names, models_dir, ncores, model_type, v
                     m = ms.GridSearchCV(svm.SVC(kernel='rbf', random_state=seed), param_grid, n_jobs=ncores, cv=cv, refit=False,
                                         verbose=verbose)
                 m.fit(x[subset], y[subset])
-
-                print(m.cv_results_)
 
                 # final model
                 if model_type == "reg":
