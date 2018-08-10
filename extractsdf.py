@@ -50,7 +50,8 @@ def main_params(in_fname, out_fname, title, field_names, all_fields, skip_value)
                 if all_fields:
                     d.update(fields)
                 else:
-                    d.update({f: fields[f] for f in field_names if f in fields})
+                    if field_names:
+                        d.update({f: fields[f] for f in field_names if f in fields})
                 output.append(d)
                 molstr = []
 
