@@ -102,7 +102,7 @@ def main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, 
                 print('Molecule #%i was skipped due to error' % i)
                 with open(error_fname, 'at') as f_err:
                     f_err.write('%s\t%s\tMolecule #%i\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                                            os.path.basename(__file__), i))
+                                                            os.path.basename(__file__), i + 1))
 
 
 def main():

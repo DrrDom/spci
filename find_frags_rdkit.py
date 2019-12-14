@@ -13,6 +13,7 @@ import sys
 import argparse
 from datetime import datetime
 from rdkit import Chem
+from find_frags_auto_rdkit import replace_no2
 
 
 def load_smarts_file(fname):
@@ -133,8 +134,18 @@ def main_params(in_sdf, out_txt, in_frags, remove_all, verbose, error_fname):
 
     with open(out_txt, "wt") as f:
 
-        for i, mol in enumerate(Chem.SDMolSupplier(in_sdf)):
+        for i, mol in enumerate(Chem.SDMolSupplier(in_sdf, sanitize=False, removeHs=False)):
             if mol is not None:
+
+                # modify representation of NO2 groups to charged version
+                mol = replace_no2(mol)
+                err = Chem.SanitizeMol(mol, catchErrors=True)
+                if err != 0:
+                    with open(error_fname, 'at') as f_err:
+                        f_err.write('%s\t%s\t%s\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                                      os.path.basename(__file__),
+                                                      'Molecule %s failed to sanitize due to: ' % mol.GetProp("_Name") + str(err)))
+
                 mol_name = mol.GetProp("_Name")
                 if verbose:
                     print("Searching for fragments in", mol_name)
@@ -155,7 +166,7 @@ def main_params(in_sdf, out_txt, in_frags, remove_all, verbose, error_fname):
                 print('Molecules #%i was skipped due to error' % i)
                 with open(error_fname, 'at') as f_err:
                     f_err.write('%s\t%s\t%i\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                                  os.path.basename(__file__), i))
+                                                  os.path.basename(__file__), i + 1))
 
 
 def main():

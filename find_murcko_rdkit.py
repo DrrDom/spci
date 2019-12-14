@@ -13,6 +13,7 @@ import argparse
 from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem.Scaffolds import MurckoScaffold
+from find_frags_auto_rdkit import replace_no2
 
 
 def add_atoms(atom, remove_atoms):
@@ -27,9 +28,18 @@ def main_params(in_sdf, out_txt, verbose, error_fname):
 
     with open(out_txt, "wt") as f:
 
-        for i, mol in enumerate(Chem.SDMolSupplier(in_sdf)):
+        for i, mol in enumerate(Chem.SDMolSupplier(in_sdf, sanitize=False, removeHs=False)):
 
             if mol:
+
+                # modify representation of NO2 groups to charged version
+                mol = replace_no2(mol)
+                err = Chem.SanitizeMol(mol, catchErrors=True)
+                if err != 0:
+                    with open(error_fname, 'at') as f_err:
+                        f_err.write('%s\t%s\t%s\n' % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                                      os.path.basename(__file__),
+                                                      'Molecule %s failed to sanitize due to: ' % mol.GetProp("_Name") + str(err)))
 
                 s = MurckoScaffold.GetScaffoldForMol(mol)
                 ids = mol.GetSubstructMatches(s)
@@ -46,7 +56,8 @@ def main_params(in_sdf, out_txt, verbose, error_fname):
             else:
                 with open(error_fname, 'at') as f_err:
                     f_err.write('%s\t%s\tcould not read molecule number %i from file\n' %
-                                (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), os.path.basename(__file__), i + 1))
+                                (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                 os.path.basename(__file__), i + 1))
 
             if verbose and (i + 1) % 100 == 0:
                 print('%i molecules passed' % (i + 1))
