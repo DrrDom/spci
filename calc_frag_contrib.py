@@ -10,10 +10,8 @@
 
 import os
 import argparse
-import platform
 import numpy as np
-from itertools import tee
-from sklearn.externals import joblib
+import joblib
 from collections import defaultdict, OrderedDict, Counter
 
 from sirms_file_class import SirmsFile, mol_frag_sep

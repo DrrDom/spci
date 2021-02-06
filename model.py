@@ -10,19 +10,16 @@
 
 import os
 import argparse
-import math
 import numpy as np
-import operator
 import sklearn.model_selection as ms
 import warnings
 
 from time import strftime
-from collections import Counter
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier, \
     GradientBoostingClassifier
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
-from sklearn.externals import joblib
+import joblib
 from sklearn.preprocessing import StandardScaler
 from sklearn import svm
 from multiprocessing import cpu_count

@@ -10,7 +10,7 @@
 import os
 import argparse
 import numpy as np
-from sklearn.externals import joblib
+import joblib
 from collections import defaultdict, Counter
 import re
 import math

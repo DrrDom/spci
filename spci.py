@@ -38,7 +38,7 @@ import filter_descriptors
 import predict
 
 sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
-import sirms
+from sirms import sirms
 
 
 def get_script_path():

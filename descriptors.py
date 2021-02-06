@@ -1,11 +1,14 @@
+import os
+import sys
+import argparse
+from collections import OrderedDict
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 from rdkit.Chem.AtomPairs import Pairs, Torsions
-import argparse
-from sirms import SaveSimplexes
-import files
-from collections import OrderedDict, defaultdict
-from ppgfunctions import *
+
+sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
+from sirms.files import SvmSaver, LoadFragments
+from sirms.sirms import SaveSimplexes
 
 
 mol_frag_sep = "###"
@@ -65,16 +68,16 @@ def main_params(in_fname, out_fname, output_format, get_fp, opt_verbose, opt_noH
         saver = None
         mols = None
         if output_format == "svm":
-            saver = files.SvmSaver(out_fname)
+            saver = SvmSaver(out_fname)
         if output_format == "txt":
             mols = OrderedDict()  # key - molname, val- mol; if frags: key - molname or mol+fragname, val-mol for mol or part b
-        frags = files.LoadFragments(frag_fname)
+        frags = LoadFragments(frag_fname)
         for i, m in enumerate(Chem.SDMolSupplier(in_fname, removeHs=False)):
            
             if m is not None:
                 print( m.GetProp("_Name"))
                 res = CalcMolFP(m, i, opt_noH=opt_noH, f=get_fp, frags=frags, per_atom_fragments=per_atom_fragments,
-                          id_field_name=id_field_name)
+                                id_field_name = id_field_name)
                 if output_format == "txt":
                     mols.update(res)
                 if output_format == "svm":
@@ -103,6 +106,7 @@ def Get_RDKFP_24(m):
 def Get_RDKFP_24_bin(m):
     return AllChem.RDKFingerprint(m, minPath=2, maxPath=4)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate fingerprint descriptors')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=False, default=None,
@@ -113,8 +117,8 @@ if __name__ == '__main__':
                         help='format of output file with calculated descriptors (txt|svm). '
                              'Txt is ordinary tab-separated text file. Svm is sparse format, two additional files will '
                              'be saved with extensions .colnames and .rownames. Default: txt.')
-    parser.add_argument('--fp_type', metavar='', required=True, help='Type of fingerprints to calculate choose one of:'
-                        ' ECFP4_bin, ECFP4, AtomPairsFP_bin, AtomPairsFP, '
+    parser.add_argument('--fp_type', metavar='', required=True, help='Type of fingerprints to calculate choose one of: '
+                        'ECFP4_bin, ECFP4, AtomPairsFP_bin, AtomPairsFP, '
                         'TopologicalTorsionsFP, RDKFP_bin, RDKFP (resp.function of rdkit will be used)')
     parser.add_argument('-x', '--noH', action='store_true', default=False,
                         help='if set this flag hydrogen atoms will be excluded from the simplexes calculation.')
