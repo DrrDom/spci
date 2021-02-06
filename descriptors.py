@@ -1,12 +1,11 @@
-import os
-import sys
+#!/usr/bin/env python3
+
 import argparse
 from collections import OrderedDict
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 from rdkit.Chem.AtomPairs import Pairs, Torsions
 
-sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
 from sirms.files import SvmSaver, LoadFragments
 from sirms.sirms import SaveSimplexes
 
@@ -41,21 +40,23 @@ def CalcMolFP(m, i, opt_noH, f, frags=None, per_atom_fragments=None, id_field_na
         nm = 'auto_generated_id_' + str(i + 1)  # 1-based as in sirms.py
     else:
         nm = m.GetProp("_Name")
-    mol_dict[nm] = get_fp_as_dict(m, opt_noH, f)
-    if per_atom_fragments:
-        counter = 0
-        for idx in range(m.GetNumAtoms()):
-            if m.GetAtomWithIdx(idx).GetAtomicNum() > 1:
+    res = get_fp_as_dict(m, opt_noH, f)
+    if res:  # if all descriptors for a molecule are zero skip fragmentation (NC(=O)N gives no TT, removal of C(=O)N from it gives TT)
+        mol_dict[nm] = res
+        if per_atom_fragments:
+            counter = 0
+            for idx in range(m.GetNumAtoms()):
+                if m.GetAtomWithIdx(idx).GetAtomicNum() > 1:
+                    rw_m = Chem.RWMol(m)
+                    rw_m.GetAtoms()[idx].SetAtomicNum(0)
+                    mol_dict[nm + mol_frag_sep + str(idx + 1) + "#" + str(counter)] = get_fp_as_dict(rw_m, opt_noH, f)
+                    counter += 1
+        elif frags and nm in frags:
+            for k, v in frags[nm].items():
                 rw_m = Chem.RWMol(m)
-                rw_m.GetAtoms()[idx].SetAtomicNum(0)
-                mol_dict[nm + mol_frag_sep + str(idx + 1) + "#" + str(counter)] = get_fp_as_dict(rw_m, opt_noH, f)
-                counter += 1
-    elif frags and nm in frags:
-        for k, v in frags[nm].items():
-            rw_m = Chem.RWMol(m)
-            for idx in sorted(v, reverse=True):  # note we don't check if atom== H (is it ok?)
-                rw_m.GetAtoms()[idx-1].SetAtomicNum(0)
-            mol_dict[nm + mol_frag_sep + k] = get_fp_as_dict(rw_m, opt_noH, f)
+                for idx in sorted(v, reverse=True):  # note we don't check if atom== H (is it ok?)
+                    rw_m.GetAtoms()[idx-1].SetAtomicNum(0)
+                mol_dict[nm + mol_frag_sep + k] = get_fp_as_dict(rw_m, opt_noH, f)
     return mol_dict
 
 

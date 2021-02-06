@@ -38,7 +38,6 @@ import filter_descriptors
 import predict
 import descriptors
 
-sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
 from sirms import sirms
 
 
