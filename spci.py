@@ -36,6 +36,7 @@ import plot_contributions
 import extractsdf
 import filter_descriptors
 import predict
+import descriptors
 
 sys.path.insert(1, os.path.join(sys.path[0], 'sirms'))
 from sirms import sirms
@@ -310,7 +311,7 @@ class Tab_1(ttk.Frame):
                 os.remove(output_sdf)
 
             # standardization and property labeling
-            if self.chemaxon_usage.get() == 'with_chemaxon':
+            if self.descriptors_choice.get() == 'with_chemaxon':
 
                 # standardize
                 print('Standardization is in progress...')
@@ -347,47 +348,62 @@ class Tab_1(ttk.Frame):
 
                 self.create_mol_titles(self.sdf_path.get(), output_sdf)
 
-            # copy setup.txt to folder with sdf file
-            shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
-                            os.path.join(os.path.dirname(self.sdf_path.get()), 'setup.txt'))
-
-            # calc sirms descriptors
-            if self.chemaxon_usage.get() == 'with_chemaxon':
-                atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
-            else:
-                atom_diff = ['elm']
+            print("Descriptors calculation started. Please wait it can take some time")
             x_fname = os.path.join(os.path.dirname(output_sdf), 'x.txt')
 
-            print("Descriptors calculation started. Please wait it can take some time")
+            # SiRMS
+            if self.descriptors_choice.get() in ['with_chemaxon', 'no_chemaxon']:
 
-            sirms.main_params(in_fname=output_sdf,
-                              out_fname=x_fname,
-                              opt_diff=atom_diff,
-                              min_num_atoms=2,
-                              max_num_atoms=6,
-                              min_num_components=1,
-                              max_num_components=2,
-                              min_num_mix_components=2,
-                              max_num_mix_components=2,
-                              mix_fname=None,
-                              descriptors_transformation='num',
-                              mix_type='abs',
-                              opt_mix_ordered=False,
-                              opt_verbose=False,
-                              opt_noH=True,
-                              frag_fname=None,
-                              per_atom_fragments=False,
-                              self_association_mix=False,
-                              reaction_diff=False,
-                              quasimix=False,
-                              id_field_name=None,
-                              output_format='svm',
-                              ncores=min(10, max(self.sb_cpu_count.get_value(), 1)))
+                # copy setup.txt to folder with sdf file
+                shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
+                                os.path.join(os.path.dirname(self.sdf_path.get()), 'setup.txt'))
 
-            # filter sirms descriptors
-            filter_descriptors.main_params(in_fname=x_fname,
-                                           out_fname=x_fname,
-                                           file_format='svm')
+                # calc sirms descriptors
+                if self.descriptors_choice.get() == 'with_chemaxon':
+                    atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
+                else:
+                    atom_diff = ['elm']
+
+                sirms.main_params(in_fname=output_sdf,
+                                  out_fname=x_fname,
+                                  opt_diff=atom_diff,
+                                  min_num_atoms=2,
+                                  max_num_atoms=6,
+                                  min_num_components=1,
+                                  max_num_components=2,
+                                  min_num_mix_components=2,
+                                  max_num_mix_components=2,
+                                  mix_fname=None,
+                                  descriptors_transformation='num',
+                                  mix_type='abs',
+                                  opt_mix_ordered=False,
+                                  opt_verbose=False,
+                                  opt_noH=True,
+                                  frag_fname=None,
+                                  per_atom_fragments=False,
+                                  self_association_mix=False,
+                                  reaction_diff=False,
+                                  quasimix=False,
+                                  id_field_name=None,
+                                  output_format='svm',
+                                  ncores=min(10, max(self.sb_cpu_count.get_value(), 1)))
+
+                # filter sirms descriptors
+                filter_descriptors.main_params(in_fname=x_fname,
+                                               out_fname=x_fname,
+                                               file_format='svm')
+
+            # RDKit
+            else:
+                descriptors.main_params(in_fname=output_sdf,
+                                        out_fname=x_fname,
+                                        output_format='svm',
+                                        get_fp=self.descriptors_choice.get(),
+                                        opt_verbose=False,
+                                        opt_noH=True,
+                                        frag_fname=None,
+                                        per_atom_fragments=False,
+                                        id_field_name=None)
 
             print("Descriptors calculation finished")
 
@@ -497,9 +513,9 @@ class Tab_1(ttk.Frame):
     def __set_compound_names_choice_event(self, event):
         self.compound_names.set(value='field')
 
-    def __chemaxon_usage_changed(self, varname, elementname, mode):
+    def __descriptors_choice_changed(self, varname, elementname, mode):
         contr_names = ['contr_overall', 'contr_charge', 'contr_logp', 'contr_hb', 'contr_ref']
-        if self.chemaxon_usage.get() == 'with_chemaxon':
+        if self.descriptors_choice.get() == 'with_chemaxon':
             states = dict(zip(contr_names, ['normal'] * len(contr_names)))
         else:
             states = dict(zip(contr_names, ['normal', 'disabled', 'disabled', 'disabled', 'disabled']))
@@ -516,7 +532,7 @@ class Tab_1(ttk.Frame):
 
         ttk.Frame.__init__(self, parent, name='tab_1')
 
-        self.chemaxon_usage = tk.StringVar(value='with_chemaxon')
+        self.descriptors_choice = tk.StringVar(value='with_chemaxon')
         self.chemaxon_dir = tk.StringVar()
         self.sdf_path = tk.StringVar()
         self.property_file_path = tk.StringVar()
@@ -524,10 +540,17 @@ class Tab_1(ttk.Frame):
         self.property_field_name = tk.StringVar()
         self.compound_names = tk.StringVar(value='gen')
 
-        chemaxon_frame = ttk.Labelframe(self, text='Structural/physico-chemical interpretation (result in different descriptors)', name='chemaxon_frame')
+        chemaxon_frame = ttk.Labelframe(self, text='Descriptors (result in different interpretation)', name='chemaxon_frame')
         chemaxon_frame.grid(column=0, row=0, sticky=(tk.E, tk.W), columnspan=4, padx=5, pady=5)
-        ttk.Radiobutton(chemaxon_frame, text='Structural & functional (Chemaxon required)', variable=self.chemaxon_usage, value='with_chemaxon').grid(column=0, row=0, sticky=(tk.W), padx=5, pady=1)
-        ttk.Radiobutton(chemaxon_frame, text='Structural only (no Chemaxon usage)', variable=self.chemaxon_usage, value='no_chemaxon').grid(column=0, row=1, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='SiRMS (structural & physicochemical interpretation, Chemaxon required)', variable=self.descriptors_choice, value='with_chemaxon').grid(column=0, row=0, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='SiRMS (structural interpretation)', variable=self.descriptors_choice, value='no_chemaxon').grid(column=0, row=1, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='Atom-pair (structural interpretation)', variable=self.descriptors_choice, value='AP').grid(column=0, row=2, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='Atom-pair binary (structural interpretation)', variable=self.descriptors_choice, value='bAP').grid(column=1, row=2, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='Morgan2 (structural interpretation)', variable=self.descriptors_choice, value='MG2').grid(column=0, row=4, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='Morgan2 binary (structural interpretation)', variable=self.descriptors_choice, value='bMG2').grid(column=1, row=4, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='RDK (structural interpretation)', variable=self.descriptors_choice, value='RDK').grid(column=0, row=6, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='RDK binary (structural interpretation)', variable=self.descriptors_choice, value='bRDK').grid(column=1, row=6, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(chemaxon_frame, text='Topological torsion (structural interpretation)', variable=self.descriptors_choice, value='TT').grid(column=0, row=8, sticky=(tk.W), padx=5, pady=1)
         # ttk.Label(self, text='Optional. Path to cxcalc utility folder, '
         #                      'e.g. C:\\Program Files (x86)\\Chemaxon\\JChem\\bin').grid(column=0, row=0, sticky=(tk.W))
         # ttk.Entry(self, width=70, textvariable=self.chemaxon_dir).grid(column=0, row=1, sticky=(tk.W, tk.E))
@@ -578,7 +601,7 @@ class Tab_1(ttk.Frame):
 
         self.sdf_path.trace('w', self.__sdf_path_changed)
         self.property_field_name.trace('w', self.__prop_field_name_changed)
-        self.chemaxon_usage.trace('w', self.__chemaxon_usage_changed)
+        self.descriptors_choice.trace('w', self.__descriptors_choice_changed)
 
         parent.add(self, text=tab_name)
 
@@ -623,7 +646,9 @@ class Tab_2(ttk.Frame):
 
         if not exist:
 
-            if self.frags_choice.get() == 'user':
+            if self.frags_choice.get() == 'atom':
+                ids_fname = None
+            elif self.frags_choice.get() == 'user':
                 ids_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_ids.txt')
             else:
                 ids_fname = os.path.join(main_dir, self.get_frag_prefix() + '_frag_ids.txt')
@@ -665,12 +690,6 @@ class Tab_2(ttk.Frame):
                                             verbose=True,
                                             error_fname=os.path.join(main_dir, "rdkit_fragmentation_errors.log"))
 
-            # calc sirms descriptors
-            if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
-                atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
-            else:
-                atom_diff = ['elm']
-
             if self.frags_choice.get() == 'user':
                 x_fname = os.path.join(wd, self.get_frag_prefix() + '_frag_x.txt')
             else:
@@ -678,35 +697,57 @@ class Tab_2(ttk.Frame):
 
             print("Descriptors calculation started. Please wait it can take some time")
 
-            sirms.main_params(in_fname=sdf_fname,
-                              out_fname=x_fname,
-                              opt_diff=atom_diff,
-                              min_num_atoms=2,
-                              max_num_atoms=6,
-                              min_num_components=1,
-                              max_num_components=2,
-                              min_num_mix_components=2,
-                              max_num_mix_components=2,
-                              mix_fname=None,
-                              descriptors_transformation='num',
-                              mix_type='abs',
-                              opt_mix_ordered=False,
-                              opt_verbose=False,
-                              opt_noH=True,
-                              frag_fname=ids_fname,
-                              per_atom_fragments=False,
-                              self_association_mix=False,
-                              reaction_diff=False,
-                              quasimix=False,
-                              id_field_name=None,
-                              output_format='svm',
-                              ncores=min(10, max(self.master.children['tab_1'].sb_cpu_count.get_value(), 1)))
+            # SIRMS
+            if self.master.children['tab_1'].descriptors_choice.get() in ['with_chemaxon', 'no_chemaxon']:
+
+                # calc sirms descriptors
+                if self.master.children['tab_1'].descriptors_choice.get() == 'with_chemaxon':
+                    atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
+                else:
+                    atom_diff = ['elm']
+
+                sirms.main_params(in_fname=sdf_fname,
+                                  out_fname=x_fname,
+                                  opt_diff=atom_diff,
+                                  min_num_atoms=2,
+                                  max_num_atoms=6,
+                                  min_num_components=1,
+                                  max_num_components=2,
+                                  min_num_mix_components=2,
+                                  max_num_mix_components=2,
+                                  mix_fname=None,
+                                  descriptors_transformation='num',
+                                  mix_type='abs',
+                                  opt_mix_ordered=False,
+                                  opt_verbose=False,
+                                  opt_noH=True,
+                                  frag_fname=ids_fname,
+                                  per_atom_fragments=True if ids_fname is None else False,
+                                  self_association_mix=False,
+                                  reaction_diff=False,
+                                  quasimix=False,
+                                  id_field_name=None,
+                                  output_format='svm',
+                                  ncores=min(10, max(self.master.children['tab_1'].sb_cpu_count.get_value(), 1)))
 
 
-            # filter sirms descriptors
-            filter_descriptors.main_params(in_fname=x_fname,
-                                           out_fname=x_fname,
-                                           file_format='svm')
+                # filter sirms descriptors
+                filter_descriptors.main_params(in_fname=x_fname,
+                                               out_fname=x_fname,
+                                               file_format='svm')
+
+            # RDKit
+            else:
+                descriptors.main_params(in_fname=sdf_fname,
+                                        out_fname=x_fname,
+                                        output_format='svm',
+                                        get_fp=self.master.children['tab_1'].descriptors_choice.get(),
+                                        opt_verbose=False,
+                                        opt_noH=True,
+                                        frag_fname=ids_fname,
+                                        per_atom_fragments=True if ids_fname is None else False,
+                                        id_field_name=None)
+
         else:
 
             # define path to descriptors of fragmented structures
@@ -720,7 +761,7 @@ class Tab_2(ttk.Frame):
         models = self.master.children['tab_1'].models_frame.get_selected_models()
         model_dir = os.path.join(wd, 'models')
 
-        if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+        if self.master.children['tab_1'].descriptors_choice.get() == 'with_chemaxon':
             prop_name = ['overall', 'CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
         else:
             prop_name = ['overall']
@@ -783,6 +824,9 @@ class Tab_2(ttk.Frame):
 
         ttk.Radiobutton(frame, text='User-defined fragments', name='user_frag', value='user', variable=self.frags_choice).\
             grid(column=0, row=9, sticky=tk.W, padx=5, pady=(0, 1))
+
+        ttk.Radiobutton(frame, text='Per atom fragmentation (cannot be visualized by the program)', name='per_atom', value='atom', variable=self.frags_choice).\
+            grid(column=0, row=20, sticky=tk.W, padx=5, pady=(0, 1))
 
         self.__entry_user_frags_path = ttk.Entry(frame, width=70, textvariable=self.user_frags_path)
         self.__entry_user_frags_path.grid(column=0, row=15, columnspan=2, sticky=(tk.W, tk.E), padx=5, pady=(0, 3))
@@ -919,7 +963,7 @@ class Tab_3(ttk.Frame):
 
         # select properties
         overall_state = True
-        if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
+        if self.master.children['tab_1'].descriptors_choice.get() == 'with_chemaxon':
             charge_state, logp_state, hb_state, ref_state = 'normal', 'normal', 'normal', 'normal'
         else:
             charge_state, logp_state, hb_state, ref_state = 'disabled', 'disabled', 'disabled', 'disabled'
@@ -995,70 +1039,86 @@ class Tab_4(ttk.Frame):
 
         if not use_x:  # generate descriptors
 
-            # standardization and property labeling
-            if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
-
-                # standardize
-                print('Standardization is in progress...')
-                # run standardize
-                std_sdf_tmp = self.sdf_path_predict.get() + '.std.sdf'
-                run_params = ['standardize',
-                              '-c',
-                              quote_str(os.path.join(project_dir, 'std_rules.xml')),
-                              quote_str(self.sdf_path_predict.get()),
-                              '-f',
-                              'sdf',
-                              '-o',
-                              quote_str(std_sdf_tmp)]
-                call(' '.join(run_params), shell=True)
-
-                # calc atomic properties with Chemaxon
-                print('Atomic properties calculation is in progress...')
-                # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
-                output_sdf = self.sdf_path_predict.get().rsplit(".")[0] + '_std_lbl.sdf'
-                calc_atomic_properties_chemaxon.main_params(in_fname=std_sdf_tmp,
-                                                            out_fname=output_sdf,
-                                                            prop=['charge', 'logp', 'acc', 'don', 'refractivity'],
-                                                            pH=None,
-                                                            cxcalc_path='cxcalc')
-
-                os.remove(std_sdf_tmp)
-
-            if self.master.children['tab_1'].chemaxon_usage.get() == 'with_chemaxon':
-                atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
-                sdf_fname = output_sdf
-            else:
-                atom_diff = ['elm']
-                sdf_fname = self.sdf_path_predict.get()
-
-            shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
-                            os.path.join(os.path.dirname(self.sdf_path_predict.get()), 'setup.txt'))
-
             print("Descriptor calculation started")
 
-            sirms.main_params(in_fname=sdf_fname,
-                              out_fname=x_fname,
-                              opt_diff=atom_diff,
-                              min_num_atoms=2,
-                              max_num_atoms=6,
-                              min_num_components=1,
-                              max_num_components=2,
-                              min_num_mix_components=2,
-                              max_num_mix_components=2,
-                              mix_fname=None,
-                              descriptors_transformation='num',
-                              mix_type='abs',
-                              opt_mix_ordered=False,
-                              opt_verbose=False,
-                              opt_noH=True,
-                              frag_fname=None,
-                              per_atom_fragments=False,
-                              self_association_mix=False,
-                              reaction_diff=False,
-                              quasimix=False,
-                              id_field_name=None,
-                              output_format='svm',
-                              ncores=min(10, max(self.master.children['tab_1'].sb_cpu_count.get_value(), 1)))
+            sdf_fname = self.sdf_path_predict.get()
+
+            # SiRMS
+            if self.master.children['tab_1'].descriptors_choice.get() in ['with_chemaxon', 'no_chemaxon']:
+
+                # standardization and property labeling
+                if self.master.children['tab_1'].descriptors_choice.get() == 'with_chemaxon':
+
+                    # standardize
+                    print('Standardization is in progress...')
+                    # run standardize
+                    std_sdf_tmp = self.sdf_path_predict.get() + '.std.sdf'
+                    run_params = ['standardize',
+                                  '-c',
+                                  quote_str(os.path.join(project_dir, 'std_rules.xml')),
+                                  quote_str(self.sdf_path_predict.get()),
+                                  '-f',
+                                  'sdf',
+                                  '-o',
+                                  quote_str(std_sdf_tmp)]
+                    call(' '.join(run_params), shell=True)
+
+                    # calc atomic properties with Chemaxon
+                    print('Atomic properties calculation is in progress...')
+                    # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
+                    output_sdf = self.sdf_path_predict.get().rsplit(".")[0] + '_std_lbl.sdf'
+                    calc_atomic_properties_chemaxon.main_params(in_fname=std_sdf_tmp,
+                                                                out_fname=output_sdf,
+                                                                prop=['charge', 'logp', 'acc', 'don', 'refractivity'],
+                                                                pH=None,
+                                                                cxcalc_path='cxcalc')
+
+                    os.remove(std_sdf_tmp)
+
+                    atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
+                    sdf_fname = output_sdf
+
+                else:
+                    atom_diff = ['elm']
+
+                shutil.copyfile(os.path.join(get_script_path(), 'setup.txt'),
+                                os.path.join(os.path.dirname(self.sdf_path_predict.get()), 'setup.txt'))
+
+                sirms.main_params(in_fname=sdf_fname,
+                                  out_fname=x_fname,
+                                  opt_diff=atom_diff,
+                                  min_num_atoms=2,
+                                  max_num_atoms=6,
+                                  min_num_components=1,
+                                  max_num_components=2,
+                                  min_num_mix_components=2,
+                                  max_num_mix_components=2,
+                                  mix_fname=None,
+                                  descriptors_transformation='num',
+                                  mix_type='abs',
+                                  opt_mix_ordered=False,
+                                  opt_verbose=False,
+                                  opt_noH=True,
+                                  frag_fname=None,
+                                  per_atom_fragments=False,
+                                  self_association_mix=False,
+                                  reaction_diff=False,
+                                  quasimix=False,
+                                  id_field_name=None,
+                                  output_format='svm',
+                                  ncores=min(10, max(self.master.children['tab_1'].sb_cpu_count.get_value(), 1)))
+
+            # RDKit
+            else:
+                descriptors.main_params(in_fname=sdf_fname,
+                                        out_fname=x_fname,
+                                        output_format='svm',
+                                        get_fp=self.master.children['tab_1'].descriptors_choice.get(),
+                                        opt_verbose=False,
+                                        opt_noH=True,
+                                        frag_fname=None,
+                                        per_atom_fragments=False,
+                                        id_field_name=None)
 
             print("Descriptor calculation finished")
 

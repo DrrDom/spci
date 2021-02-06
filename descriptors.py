@@ -22,16 +22,17 @@ def CalcMolFP(m, i, opt_noH, f, frags=None, per_atom_fragments=None, id_field_na
         
         if opt_noH:
             # Chem.RemoveHs(mol)  # !it doesnt help, anyway next line gets them Hs back
-            m = Chem.RWMol(mol)
-            for idx in reversed(range(m.GetNumAtoms())):  # reverse because ids of atoms change while iter
-                if m.GetAtomWithIdx(idx).GetAtomicNum() == 1: m.RemoveAtom(idx)
-            Chem.FastFindRings(m)  # neede to calc morganfp, otherwise err"no ringinfo"
+            mol = Chem.RWMol(mol)
+            for idx in reversed(range(mol.GetNumAtoms())):  # reverse because ids of atoms change while iter
+                if mol.GetAtomWithIdx(idx).GetAtomicNum() == 1:
+                    mol.RemoveAtom(idx)
+            Chem.FastFindRings(mol)  # needs to calc morganfp, otherwise err "no ringinfo"
         if f in (GetMorganFingerprint_2, Pairs.GetAtomPairFingerprint, Torsions.GetTopologicalTorsionFingerprint,
                  Get_RDKFP_24):
             
-            return {str(k): v for k, v in f(m).GetNonzeroElements().items()}  # keys must be str input to saver, val-int
+            return {str(k): v for k, v in f(mol).GetNonzeroElements().items()}  # keys must be str input to saver, val-int
         elif f in [GetMorganFingerprint_2_bin, Pairs.GetAtomPairFingerprintAsBitVect, Get_RDKFP_24_bin]:
-            return {str(k): int(v) for k,v in enumerate(DataStructs.BitVectToText(f(m))) if v == '1'}
+            return {str(k): int(v) for k, v in enumerate(DataStructs.BitVectToText(f(mol))) if v == '1'}
 
     mol_dict = OrderedDict()
     if id_field_name is not None:
@@ -61,8 +62,16 @@ def CalcMolFP(m, i, opt_noH, f, frags=None, per_atom_fragments=None, id_field_na
 def main_params(in_fname, out_fname, output_format, get_fp, opt_verbose, opt_noH, frag_fname,
                 per_atom_fragments, id_field_name):
 
-    # load sdf and get dict of fp (like sirms dict)
+    funcs = {'bMG2': GetMorganFingerprint_2_bin,
+             'MG2': GetMorganFingerprint_2,
+             'bAP': Pairs.GetAtomPairFingerprintAsBitVect,
+             'AP': Pairs.GetAtomPairFingerprint,
+             'TT': Torsions.GetTopologicalTorsionFingerprint,
+             'bRDK': Get_RDKFP_24_bin,
+             'RDK': Get_RDKFP_24}
+    get_fp = funcs[get_fp]
 
+    # load sdf and get dict of fp (like sirms dict)
     input_file_extension = in_fname.strip().split(".")[-1].lower()
     if input_file_extension == 'sdf':
         saver = None
@@ -73,9 +82,7 @@ def main_params(in_fname, out_fname, output_format, get_fp, opt_verbose, opt_noH
             mols = OrderedDict()  # key - molname, val- mol; if frags: key - molname or mol+fragname, val-mol for mol or part b
         frags = LoadFragments(frag_fname)
         for i, m in enumerate(Chem.SDMolSupplier(in_fname, removeHs=False)):
-           
             if m is not None:
-                print( m.GetProp("_Name"))
                 res = CalcMolFP(m, i, opt_noH=opt_noH, f=get_fp, frags=frags, per_atom_fragments=per_atom_fragments,
                                 id_field_name = id_field_name)
                 if output_format == "txt":
@@ -117,9 +124,10 @@ if __name__ == '__main__':
                         help='format of output file with calculated descriptors (txt|svm). '
                              'Txt is ordinary tab-separated text file. Svm is sparse format, two additional files will '
                              'be saved with extensions .colnames and .rownames. Default: txt.')
-    parser.add_argument('--fp_type', metavar='', required=True, help='Type of fingerprints to calculate choose one of: '
-                        'ECFP4_bin, ECFP4, AtomPairsFP_bin, AtomPairsFP, '
-                        'TopologicalTorsionsFP, RDKFP_bin, RDKFP (resp.function of rdkit will be used)')
+    parser.add_argument('--fp_type', metavar='', required=True,
+                        help='Type of fingerprints to calculate choose one of: MG2 or bMG2 (Morgan radius 2), '
+                             'AP or bAP (atom-pair), RDK or bRDK (2-4 atoms RDK fingerprint), '
+                             'TT (topological torsion). Prefix b means binary fingerprint of length 2048.')
     parser.add_argument('-x', '--noH', action='store_true', default=False,
                         help='if set this flag hydrogen atoms will be excluded from the simplexes calculation.')
     parser.add_argument('-f', '--fragments', metavar='fragments.txt', default=None,
@@ -136,18 +144,11 @@ if __name__ == '__main__':
 
     args = vars(parser.parse_args())
 
-    funcs = {'ECFP4_bin': GetMorganFingerprint_2_bin,
-             'ECFP4': GetMorganFingerprint_2,
-             'AtomPairsFP_bin': Pairs.GetAtomPairFingerprintAsBitVect,
-             'AtomPairsFP': Pairs.GetAtomPairFingerprint,
-             'TopologicalTorsionsFP': Torsions.GetTopologicalTorsionFingerprint,
-             'RDKFP_bin': Get_RDKFP_24_bin,
-             'RDKFP': Get_RDKFP_24}
     for o, v in args.items():
         if o == "in": in_fname = v
         if o == "out": out_fname = v
         if o == "output_format": output_format = v
-        if o == "fp_type":  get_fp = funcs[v]
+        if o == "fp_type": get_fp = v
         if o == "verbose": opt_verbose = v
         if o == "noH": opt_noH = v
         if o == "fragments": frag_fname = v
