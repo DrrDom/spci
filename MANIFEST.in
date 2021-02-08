@@ -1,0 +1,3 @@
+include spci/default.smarts
+include spci/setup.txt
+include spci/std_rules.xml

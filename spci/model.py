@@ -25,7 +25,7 @@ from sklearn import svm
 from multiprocessing import cpu_count
 from scipy.sparse import dok_matrix
 
-from predict import get_major_vote
+from .predict import get_major_vote
 
 
 def load_sirms_txt(fname, names=None):

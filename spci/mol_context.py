@@ -1,5 +1,4 @@
 import re
-import sys
 from itertools import product, permutations, combinations
 from collections import defaultdict
 from rdkit import Chem

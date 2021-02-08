@@ -13,7 +13,7 @@ import sys
 import argparse
 from datetime import datetime
 from rdkit import Chem
-from find_frags_auto_rdkit import replace_no2
+from .find_frags_auto_rdkit import replace_no2
 
 
 def load_smarts_file(fname):

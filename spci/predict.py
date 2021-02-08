@@ -16,7 +16,7 @@ import re
 import math
 import operator
 
-from sirms_file_class import SirmsFile
+from .sirms_file_class import SirmsFile
 
 
 def get_var_names(fname, fformat):

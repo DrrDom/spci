@@ -10,7 +10,6 @@
 
 import argparse
 from matplotlib import pyplot as plt
-from math import floor, ceil
 from collections import Counter
 
 

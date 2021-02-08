@@ -10,7 +10,6 @@
 
 import os
 import re
-import sys
 import ast
 import glob
 import shutil
@@ -24,25 +23,25 @@ from multiprocessing import cpu_count
 from subprocess import call
 from collections import OrderedDict
 
-import sdf_field2title
-import calc_atomic_properties_chemaxon
-import model
-import find_frags_rdkit as find_frags
+from . import sdf_field2title
+from . import calc_atomic_properties_chemaxon
+from . import model
+from . import find_frags_rdkit as find_frags
 # import find_rings_indigo as find_rings
-import find_murcko_rdkit as find_murcko
-import find_frags_auto_rdkit as find_frags_auto
-import calc_frag_contrib
-import plot_contributions
-import extractsdf
-import filter_descriptors
-import predict
-import descriptors
+from . import find_murcko_rdkit as find_murcko
+from . import find_frags_auto_rdkit as find_frags_auto
+from . import calc_frag_contrib
+from . import plot_contributions
+from . import extractsdf
+from . import filter_descriptors
+from . import predict
+from . import descriptors
 
 from sirms import sirms
 
 
 def get_script_path():
-    return os.path.dirname(os.path.realpath(sys.argv[0]))
+    return os.path.abspath(os.path.dirname(__file__))
 
 
 def quote_str(s):
@@ -51,7 +50,7 @@ def quote_str(s):
 
 class StatWindow(tk.Toplevel):
 
-# it's a magic
+# it's magic
 # ideas were taken from
 # http://stackoverflow.com/questions/13205727/using-ttk-treeview-how-can-i-get-horizontal-scrolling-to-work-as-expected
 
@@ -313,26 +312,26 @@ class Tab_1(ttk.Frame):
             if self.descriptors_choice.get() == 'with_chemaxon':
 
                 # standardize
-                print('Standardization is in progress...')
+                # print('Standardization is in progress...')
                 # copy xml-rules if the file is absent in the sdf folder
-                shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
-                                os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
-                # run standardize
-                std_sdf_tmp = self.sdf_path.get() + '.std.sdf'
-                run_params = ['standardize',
-                              '-c',
-                              quote_str(os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml')),
-                              quote_str(self.sdf_path.get()),
-                              '-f',
-                              'sdf',
-                              '-o',
-                              quote_str(std_sdf_tmp)]
-                call(' '.join(run_params), shell=True)
+                # shutil.copyfile(os.path.join(get_script_path(), 'std_rules.xml'),
+                #                 os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml'))
+
+                # std_sdf_tmp = self.sdf_path.get() + '.std.sdf'
+                # run_params = ['standardize',
+                #               '-c',
+                #               quote_str(os.path.join(os.path.dirname(self.sdf_path.get()), 'std_rules.xml')),
+                #               quote_str(self.sdf_path.get()),
+                #               '-f',
+                #               'sdf',
+                #               '-o',
+                #               quote_str(std_sdf_tmp)]
+                # call(' '.join(run_params), shell=True)
 
                 # calc atomic properties with Chemaxon
                 print('Atomic properties calculation is in progress...')
-                prop_sdf_tmp = std_sdf_tmp + '.prop.sdf'
-                calc_atomic_properties_chemaxon.main_params(in_fname=std_sdf_tmp,
+                prop_sdf_tmp = self.sdf_path.get() + '.prop.sdf'
+                calc_atomic_properties_chemaxon.main_params(in_fname=self.sdf_path.get(),
                                                             out_fname=prop_sdf_tmp,
                                                             prop=['charge', 'logp', 'acc', 'don', 'refractivity'],
                                                             pH=None,
@@ -340,7 +339,7 @@ class Tab_1(ttk.Frame):
 
                 self.create_mol_titles(prop_sdf_tmp, output_sdf)
 
-                os.remove(std_sdf_tmp)
+                # os.remove(std_sdf_tmp)
                 os.remove(prop_sdf_tmp)
 
             else:
@@ -367,7 +366,7 @@ class Tab_1(ttk.Frame):
                                   out_fname=x_fname,
                                   opt_diff=atom_diff,
                                   min_num_atoms=2,
-                                  max_num_atoms=6,
+                                  max_num_atoms=4,
                                   min_num_components=1,
                                   max_num_components=2,
                                   min_num_mix_components=2,
@@ -709,7 +708,7 @@ class Tab_2(ttk.Frame):
                                   out_fname=x_fname,
                                   opt_diff=atom_diff,
                                   min_num_atoms=2,
-                                  max_num_atoms=6,
+                                  max_num_atoms=4,
                                   min_num_components=1,
                                   max_num_components=2,
                                   min_num_mix_components=2,
@@ -1049,30 +1048,29 @@ class Tab_4(ttk.Frame):
                 if self.master.children['tab_1'].descriptors_choice.get() == 'with_chemaxon':
 
                     # standardize
-                    print('Standardization is in progress...')
-                    # run standardize
-                    std_sdf_tmp = self.sdf_path_predict.get() + '.std.sdf'
-                    run_params = ['standardize',
-                                  '-c',
-                                  quote_str(os.path.join(project_dir, 'std_rules.xml')),
-                                  quote_str(self.sdf_path_predict.get()),
-                                  '-f',
-                                  'sdf',
-                                  '-o',
-                                  quote_str(std_sdf_tmp)]
-                    call(' '.join(run_params), shell=True)
+                    # print('Standardization is in progress...')
+                    # std_sdf_tmp = self.sdf_path_predict.get() + '.std.sdf'
+                    # run_params = ['standardize',
+                    #               '-c',
+                    #               quote_str(os.path.join(project_dir, 'std_rules.xml')),
+                    #               quote_str(self.sdf_path_predict.get()),
+                    #               '-f',
+                    #               'sdf',
+                    #               '-o',
+                    #               quote_str(std_sdf_tmp)]
+                    # call(' '.join(run_params), shell=True)
 
                     # calc atomic properties with Chemaxon
                     print('Atomic properties calculation is in progress...')
                     # input_sdf = self.sdf_path.get() if tmp_sdf is None else tmp_sdf
                     output_sdf = self.sdf_path_predict.get().rsplit(".")[0] + '_std_lbl.sdf'
-                    calc_atomic_properties_chemaxon.main_params(in_fname=std_sdf_tmp,
+                    calc_atomic_properties_chemaxon.main_params(in_fname=self.sdf_path_predict.get(),
                                                                 out_fname=output_sdf,
                                                                 prop=['charge', 'logp', 'acc', 'don', 'refractivity'],
                                                                 pH=None,
                                                                 cxcalc_path='cxcalc')
 
-                    os.remove(std_sdf_tmp)
+                    # os.remove(std_sdf_tmp)
 
                     atom_diff = ['CHARGE', 'LOGP', 'HB', 'REFRACTIVITY']
                     sdf_fname = output_sdf
@@ -1087,7 +1085,7 @@ class Tab_4(ttk.Frame):
                                   out_fname=x_fname,
                                   opt_diff=atom_diff,
                                   min_num_atoms=2,
-                                  max_num_atoms=6,
+                                  max_num_atoms=4,
                                   min_num_components=1,
                                   max_num_components=2,
                                   min_num_mix_components=2,
@@ -1162,7 +1160,7 @@ def main():
 
     content = ttk.Frame(root)
 
-    lbl_copyright = ttk.Label(content, text='(c) Pavel Polishchuk 2014-2018 - v1.0.0')
+    lbl_copyright = ttk.Label(content, text='(c) Pavel Polishchuk 2014-2021 - v1.1.0')
 
     tabs = ttk.Notebook(content)
     tab_1 = Tab_1(tabs, 'Build models')

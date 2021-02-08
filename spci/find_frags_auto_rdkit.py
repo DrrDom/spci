@@ -15,7 +15,7 @@ from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdMMPA
 
-from mol_context import get_canon_context_core
+from .mol_context import get_canon_context_core
 
 
 patt = re.compile("\[\*\:[0-9]+\]")  # to change CC([*:1])O to CC([*])O

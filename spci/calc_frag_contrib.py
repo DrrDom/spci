@@ -14,8 +14,8 @@ import numpy as np
 import joblib
 from collections import defaultdict, OrderedDict, Counter
 
-from sirms_file_class import SirmsFile, mol_frag_sep
-from predict import load_multi_obj
+from .sirms_file_class import SirmsFile, mol_frag_sep
+from .predict import load_multi_obj
 
 
 def load_sirms(fname):

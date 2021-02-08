@@ -115,7 +115,7 @@ def Get_RDKFP_24_bin(m):
     return AllChem.RDKFingerprint(m, minPath=2, maxPath=4)
 
 
-if __name__ == '__main__':
+def entry_point():
     parser = argparse.ArgumentParser(description='Calculate fingerprint descriptors')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=False, default=None,
                         help='input file ( sdf with standardized structures')
@@ -160,3 +160,6 @@ if __name__ == '__main__':
                 opt_verbose=opt_verbose, opt_noH=opt_noH, frag_fname=frag_fname,
                 per_atom_fragments=per_atom_fragments, id_field_name=id_field_name)
 
+
+if __name__ == '__main__':
+    entry_point()

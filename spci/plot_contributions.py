@@ -11,7 +11,6 @@
 import argparse
 import matplotlib.pyplot as plt
 from collections import defaultdict, Counter
-import pprint
 import numpy as np
 
 mol_frag_sep = "###"
@@ -66,7 +65,7 @@ def read_contrib_file(fname, model_names, min_M, min_N, contr_names):
                 values = [values[i] for i in keep_ids]
                 d[model_name][prop_name] = values
 
-    return (frag_names, d)
+    return frag_names, d
 
 
 def median(mylist):
@@ -74,7 +73,7 @@ def median(mylist):
     length = len(sorts)
     if not length % 2:
         return (sorts[length // 2] + sorts[length // 2 - 1]) / 2.0
-    return (sorts[length // 2])
+    return sorts[length // 2]
 
 
 def add_consensus_average(contr_dict):
@@ -122,7 +121,7 @@ def prep_data_boxplot(contr_dict, frag_names_list, add_consensus=True):
                 tmp[frag_names_list[i]].append(value)
             sorted_frag_names = sorted(tmp.keys())
             output_dict[model_name][prop_name] = [tmp[n] for n in sorted_frag_names]
-    return (sorted_frag_names, output_dict)
+    return sorted_frag_names, output_dict
 
 
 def sorted_ids(ls, ascending=True):
@@ -132,13 +131,13 @@ def sorted_ids(ls, ascending=True):
         ids = sorted(range(len(ls)), key=lambda k: -ls[k])
     ids = sorted(enumerate(ids), key=lambda x: x[1])
     ids = [i for i, j in ids]
-    return (ids)
+    return ids
 
 
 def sort_by_median(list_of_lists, ascending=True):
     m = [median(i) for i in list_of_lists]
     ids = sorted_ids(m, ascending)
-    return (ids)
+    return ids
 
 
 def prep_data_barplot(contr_dict, frag_names_list, add_consensus=True):
@@ -162,7 +161,7 @@ def prep_data_barplot(contr_dict, frag_names_list, add_consensus=True):
     for model_name in d.keys():
         for prop_name in d[model_name].keys():
             d[model_name][prop_name] = [median(v) for v in d[model_name][prop_name]]
-    return (sorted_frag_names, d)
+    return sorted_frag_names, d
 
 
 def prep_data_barplot_binary_class(contr_dict, frag_names_list, add_consensus=True):
@@ -191,7 +190,7 @@ def prep_data_barplot_binary_class(contr_dict, frag_names_list, add_consensus=Tr
                 p = sum([vv for vv in v if vv > 0])
                 tmp.append((n, p))
             d[model_name][prop_name] = tmp
-    return (sorted_frag_names, d)
+    return sorted_frag_names, d
 
 
 def main_params(contr_fname, contr_names, fig_fname, model_names, on_screen, min_M, min_N, model_type):
