@@ -125,7 +125,7 @@ def entry_point():
                         help='format of output file with calculated descriptors (txt|svm). '
                              'Txt is ordinary tab-separated text file. Svm is sparse format, two additional files will '
                              'be saved with extensions .colnames and .rownames. Default: txt.')
-    parser.add_argument('--fp_type', metavar='', required=True,
+    parser.add_argument('--fp_type', required=True,
                         help='Type of fingerprints to calculate choose one of: MG2 or bMG2 (Morgan radius 2), '
                              'AP or bAP (atom-pair), RDK or bRDK (2-4 atoms RDK fingerprint), '
                              'TT (topological torsion). Prefix b means binary fingerprint of length 2048.')
