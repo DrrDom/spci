@@ -5,7 +5,7 @@
 # version         : 0.1
 # python_version  : 3.2
 # copyright       : Pavel Polishchuk 2014
-# license         : GPL3
+# license         : LGPLv3
 #==============================================================================
 
 import argparse

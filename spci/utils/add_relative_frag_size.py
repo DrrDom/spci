@@ -4,7 +4,7 @@
 # version         : 0.1
 # python_version  : 3.5.2
 # copyright       : Maria Matveieva 2018
-# license         : GPL3
+# license         : LGPLv3
 #==============================================================================
 
 from rdkit import Chem

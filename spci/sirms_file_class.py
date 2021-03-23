@@ -4,7 +4,7 @@
 # version         : 0.1
 # python_version  : 3.2
 # copyright       : Pavel 2015
-# license         : GPL3
+# license         : LGPLv3
 #==============================================================================
 
 import os
