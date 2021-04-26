@@ -7,6 +7,10 @@ Automatic tool for mining structure-property relationships from chemical data se
 Retrieves structure-property relationship from data sets in a chemically meaningful way.  
 Returns estimated contributions of fragments to the investigated property of compounds from a data set and can estimate contribution of different physicochemical factors as well.
 
+#### Installation
+
+`pip install spci`
+
 #### Features
 
 1. Easy to use straightforward workflow with GUI.
@@ -26,6 +30,7 @@ Returns estimated contributions of fragments to the investigated property of com
 2. rspci - R package for custom visualization and analysis (https://github.com/DrrDom/rspci)
 3. Online tool for visualization, plot customization and figure downloading (http://158.194.101.252:3838/spci-vis/). Demo version is here (http://158.194.101.252:3838/spci-vis-demo/)
 4. Per atom contributions can be visualized with RDKit similarity maps.
+
 #### Manual
 
 The short manual is included.
