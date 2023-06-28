@@ -66,3 +66,8 @@ LGPLv3
 1.1.1 (23.03.2021)
 - changed license to LGPLv3
 - fixed arguments in scpi_descriptors
+
+1.1.2 (28.06.2023)
+- add max_size argument to find_frag_auto_rdkit.py to limit maximum size of output fragments
+- skip fragments with H as a context from output of find_frag_auto_rdkit.py
+- update README and installation notes
