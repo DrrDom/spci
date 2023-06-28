@@ -27,7 +27,7 @@ def replace_no2(mol):
     return AllChem.ReplaceSubstructs(mol, query, repl, replaceAll=True)[0]
 
 
-def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
+def fragment_mol(mol, query, max_cuts, keep_stereo, radius, max_size):
     # returns list of lists: [['F', [0]], ['C#N', [3, 4]], ... ]
 
     def get_atom_prop(molecule, prop="Index", only_heavy=True):
@@ -71,30 +71,33 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius):
             ids_0 = get_atom_prop(components[0])
             ids_1 = get_atom_prop(components[1])
             if Chem.MolToSmiles(components[0]) != '[H][*:1]':  # context cannot be H
-                frag_name = get_frag_name(components[0], components[1], radius, keep_stereo)
-                if frag_name:
-                    output.append((frag_name, ids_1))
+                if max_size is None or components[1].GetNumHeavyAtoms() <= max_size:
+                    frag_name = get_frag_name(components[0], components[1], radius, keep_stereo)
+                    if frag_name:
+                        output.append((frag_name, ids_1))
             if Chem.MolToSmiles(components[1]) != '[H][*:1]':  # context cannot be H
-                frag_name = get_frag_name(components[1], components[0], radius, keep_stereo)
-                if frag_name:
-                    output.append((frag_name, ids_0))
+                if max_size is None or components[0].GetNumHeavyAtoms() <= max_size:
+                    frag_name = get_frag_name(components[1], components[0], radius, keep_stereo)
+                    if frag_name:
+                        output.append((frag_name, ids_0))
         else:   # multiple cuts
-            # there are no checks for H needed because H can be present only in single cuts
-            frag_name = get_frag_name(chains, core, radius, keep_stereo)
-            if frag_name:
-                output.append((frag_name, get_atom_prop(core)))
+            if Chem.MolToSmiles(chains).find('[H][*:1]') == -1:  # context cannot be H
+                if max_size is None or core.GetNumHeavyAtoms() <= max_size:
+                    frag_name = get_frag_name(chains, core, radius, keep_stereo)
+                    if frag_name:
+                        output.append((frag_name, get_atom_prop(core)))
 
     return output
 
 
-def main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname):
+def main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname, max_size=None):
 
     with open(out_txt, 'wt') as f:
         for i, mol in enumerate(Chem.SDMolSupplier(in_sdf, sanitize=False, removeHs=False)):
             if mol is not None:
                 if verbose:
                     print(mol.GetProp("_Name") + ' is processing')
-                res = fragment_mol(mol, query, max_cuts, keep_stereo, radius)
+                res = fragment_mol(mol, query, max_cuts, keep_stereo, radius, max_size)
                 for item in res:
                     ids = [i + 1 for i in item[1]]  # save as 1-based ids
                     f.write(mol.GetProp("_Name") + '\t' + item[0] + '\t' + '\t'.join(map(str, ids)) + '\n')
@@ -123,6 +126,8 @@ def main():
                              '0 means no context. Several values separated by space can be specified. '
                              'The output fragment names will consist of core_smi_1|env_smi_1||core_smi_2|env_smi_2.'
                              ' Default: [0].')
+    parser.add_argument('--max_size', metavar='integer', default=None, required=False, type=int,
+                        help='maximum number of heavy atoms in output fragments. Default: no restriction.')
     parser.add_argument('-s', '--keep_stereo', action='store_true', default=False,
                         help='set this flag to keep stereo in context and core parts.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -141,8 +146,9 @@ def main():
         if o == "error_file": error_fname = v
         if o == "keep_stereo": keep_stereo = v
         if o == "radius": radius = tuple(sorted(map(int, v)))
+        if o == "max_size": max_size = v
 
-    main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname)
+    main_params(in_sdf, out_txt, query, max_cuts, keep_stereo, radius, verbose, error_fname, max_size)
 
 
 if __name__ == '__main__':
