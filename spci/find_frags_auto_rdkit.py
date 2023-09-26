@@ -33,7 +33,7 @@ def fragment_mol(mol, query, max_cuts, keep_stereo, radius, max_size):
     def get_atom_prop(molecule, prop="Index", only_heavy=True):
         res = []
         for a in molecule.GetAtoms():
-            if only_heavy and a.GetAtomicNum() > 1:
+            if (only_heavy and a.GetAtomicNum() > 1) or not only_heavy:
                 try:
                     res.append(a.GetIntProp(prop))
                 except KeyError:
