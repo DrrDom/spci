@@ -55,7 +55,13 @@ def CalcMolFP(m, i, opt_noH, f, frags=None, per_atom_fragments=None, id_field_na
             for k, v in frags[nm].items():
                 rw_m = Chem.RWMol(m)
                 for idx in sorted(v, reverse=True):  # note we don't check if atom== H (is it ok?)
-                    rw_m.GetAtoms()[idx-1].SetAtomicNum(0)
+                    try:
+                        rw_m.GetAtoms()[idx-1].SetAtomicNum(0)
+                    except IndexError:
+                        # most probably this is hydrogen, which was found by fragment SMARTS,
+                        # but is absent in a molecule, because the data set does not contain Hs, however,
+                        # before substructure search we add Hs (why we do we need this? special patterns?)
+                        continue
                 mol_dict[nm + mol_frag_sep + k] = get_fp_as_dict(rw_m, opt_noH, f)
     return mol_dict
 
