@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 from collections import OrderedDict
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
@@ -97,10 +98,33 @@ def main_params(in_fname, out_fname, output_format, get_fp, opt_verbose, opt_noH
                 if output_format == "svm":
                     for mol_name, descr_dict in res.items():
                         saver.save_mol_descriptors(mol_name, descr_dict)
+            if opt_verbose:
+                sys.stderr.write(f'\r{i + 1} molecules passed')
         if output_format == "txt":
             SaveSimplexes(out_fname, mols, output_format)
+
+    elif input_file_extension == 'smi':
+        saver = None
+        mols = None
+        if output_format == "svm":
+            saver = SvmSaver(out_fname)
+        if output_format == "txt":
+            mols = OrderedDict()  # key - molname, val- mol; if frags: key - molname or mol+fragname, val-mol for mol or part b
+        for i, m in enumerate(Chem.SmilesMolSupplier(in_fname, delimiter='\t', titleLine=False)):
+            if m is not None:
+                res = CalcMolFP(m, i, opt_noH=opt_noH, f=get_fp)
+                if output_format == "txt":
+                    mols.update(res)
+                if output_format == "svm":
+                    for mol_name, descr_dict in res.items():
+                        saver.save_mol_descriptors(mol_name, descr_dict)
+            if opt_verbose:
+                sys.stderr.write(f'\r{i + 1} molecules passed')
+        if output_format == "txt":
+            SaveSimplexes(out_fname, mols, output_format)
+
     else:
-        print("Input file extension should be SDF Current file has %s. Please check it." %
+        print("Input file extension should be SDF or SMI. Current file has %s. Please check it." %
               input_file_extension.upper())
         return None
 
@@ -124,7 +148,8 @@ def Get_RDKFP_24_bin(m):
 def entry_point():
     parser = argparse.ArgumentParser(description='Calculate fingerprint descriptors')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=False, default=None,
-                        help='input file ( sdf with standardized structures')
+                        help='input file (sdf with standardized structures). SMILES input is possible, but it will '
+                             'ignore fragments, per_atom_fragments and id_field_name arguments.')
     parser.add_argument('-o', '--out', metavar='output.txt', required=False, default=None,
                         help='output file with calculated descriptors. Can be in text or sparse svm format.')
     parser.add_argument('-b', '--output_format', metavar='output_format', default='txt',
