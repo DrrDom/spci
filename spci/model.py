@@ -190,7 +190,7 @@ def make_subsets(y, seed=42):
         ratio = round(len(ids_maj) / len(ids_min))
         np.random.shuffle(ids_maj)
         np.random.shuffle(ids_min)
-        subset_sizes = (len(ids_maj) // ratio) * np.ones(ratio, dtype=np.int)
+        subset_sizes = (len(ids_maj) // ratio) * np.ones(ratio, dtype=np.int64)
         subset_sizes[:len(ids_maj) % ratio] += 1
         current = 0
         for subset_size in subset_sizes:
