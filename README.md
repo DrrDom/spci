@@ -74,3 +74,8 @@ LGPLv3
 
 1.1.4 (04.11.2024)
 - fix calculation of fragment contributions if initial molecules do not contain hydrogens 
+
+1.1.5 (17.01.2026)
+- adjust fingerprint generation to use novel RDKit generators
+- adjust undersampling to use the recent numpy version
+- add support of SMILES input in descriptors.py
