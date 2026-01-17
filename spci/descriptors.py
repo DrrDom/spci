@@ -5,13 +5,19 @@ import sys
 from collections import OrderedDict
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
-from rdkit.Chem.AtomPairs import Pairs, Torsions
+from rdkit.Chem import rdFingerprintGenerator
 
 from sirms.files import SvmSaver, LoadFragments
 from sirms.sirms import SaveSimplexes
 
 
 mol_frag_sep = "###"
+
+# Generators (create once)
+morgan2_gen = rdFingerprintGenerator.GetMorganGenerator(radius=2)
+rdk24_gen = rdFingerprintGenerator.GetRDKitFPGenerator(minPath=2, maxPath=4)
+ap_gen = rdFingerprintGenerator.GetAtomPairGenerator()
+tt_gen = rdFingerprintGenerator.GetTopologicalTorsionGenerator()
 
 
 def CalcMolFP(m, i, opt_noH, f, frags=None, per_atom_fragments=None, id_field_name=None):
@@ -27,11 +33,15 @@ def CalcMolFP(m, i, opt_noH, f, frags=None, per_atom_fragments=None, id_field_na
                 if mol.GetAtomWithIdx(idx).GetAtomicNum() == 1:
                     mol.RemoveAtom(idx)
             Chem.FastFindRings(mol)  # needs to calc morganfp, otherwise err "no ringinfo"
-        if f in (GetMorganFingerprint_2, Pairs.GetAtomPairFingerprint, Torsions.GetTopologicalTorsionFingerprint,
+        if f in (GetMorganFingerprint_2,
+                 GetAtomPairFP,
+                 GetTopologicalTorsionFP_bin,
                  Get_RDKFP_24):
-            
             return {str(k): v for k, v in f(mol).GetNonzeroElements().items()}  # keys must be str input to saver, val-int
-        elif f in [GetMorganFingerprint_2_bin, Pairs.GetAtomPairFingerprintAsBitVect, Get_RDKFP_24_bin]:
+        elif f in (GetMorganFingerprint_2_bin,
+                   GetAtomPairFP_bin,
+                   Get_RDKFP_24_bin,
+                   GetTopologicalTorsionFP_bin):
             return {str(k): int(v) for k, v in enumerate(DataStructs.BitVectToText(f(mol))) if v == '1'}
 
     mol_dict = OrderedDict()
@@ -72,9 +82,10 @@ def main_params(in_fname, out_fname, output_format, get_fp, opt_verbose, opt_noH
 
     funcs = {'bMG2': GetMorganFingerprint_2_bin,
              'MG2': GetMorganFingerprint_2,
-             'bAP': Pairs.GetAtomPairFingerprintAsBitVect,
-             'AP': Pairs.GetAtomPairFingerprint,
-             'TT': Torsions.GetTopologicalTorsionFingerprint,
+             'bAP': GetAtomPairFP_bin,
+             'AP': GetAtomPairFP,
+             'bTT': GetTopologicalTorsionFP_bin,
+             'TT': GetTopologicalTorsionFP,
              'bRDK': Get_RDKFP_24_bin,
              'RDK': Get_RDKFP_24}
     get_fp = funcs[get_fp]
@@ -130,19 +141,28 @@ def main_params(in_fname, out_fname, output_format, get_fp, opt_verbose, opt_noH
 
 
 def GetMorganFingerprint_2(m):
-    return AllChem.GetMorganFingerprint(m, radius=2)
-
+    return morgan2_gen.GetSparseCountFingerprint(m)
 
 def GetMorganFingerprint_2_bin(m):
-    return AllChem.GetMorganFingerprintAsBitVect(m, radius=2)
-
+    return morgan2_gen.GetFingerprint(m)
 
 def Get_RDKFP_24(m):
-    return AllChem.UnfoldedRDKFingerprintCountBased(m, minPath=2, maxPath=4)
-
+    return rdk24_gen.GetSparseCountFingerprint(m)
 
 def Get_RDKFP_24_bin(m):
-    return AllChem.RDKFingerprint(m, minPath=2, maxPath=4)
+    return rdk24_gen.GetFingerprint(m)
+
+def GetAtomPairFP(m):
+    return ap_gen.GetSparseCountFingerprint(m)
+
+def GetAtomPairFP_bin(m):
+    return ap_gen.GetFingerprint(m)
+
+def GetTopologicalTorsionFP(m):
+    return tt_gen.GetSparseCountFingerprint(m)
+
+def GetTopologicalTorsionFP_bin(m):
+    return tt_gen.GetFingerprint(m)
 
 
 def entry_point():
